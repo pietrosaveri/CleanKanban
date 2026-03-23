@@ -35,6 +35,16 @@ Just you, your team, and the work.
 - **Realtime** — every change shows up instantly for everyone on the board, no refresh needed
 - **Auth** — sign in with Google, stay signed in
 
+<p align="center">
+  <img src="img/app.png" alt="CleanKanban board view" width="780" />
+</p>
+
+### Nice DID history
+
+<p align="center">
+  <img src="img/History.png" alt="CleanKanban done history" width="780" />
+</p>
+
 ---
 
 ## Built for teams but without the overhead
