@@ -29,7 +29,8 @@ export default function TopBar({
   const menuRef = useRef<HTMLDivElement>(null)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const userMenuRef = useRef<HTMLDivElement>(null)
-  const [pendingDeleteAccount, setPendingDeleteAccount] = useState(false)
+  const [deleteAccountState, setDeleteAccountState] = useState<null | 'warning' | 'confirm'>(null)
+  const [sharedBoardCount, setSharedBoardCount] = useState(0)
   const [joinCodeOpen, setJoinCodeOpen] = useState(false)
   const joinCodeRef = useRef<HTMLDivElement>(null)
   const [copied, setCopied] = useState(false)
@@ -78,19 +79,41 @@ export default function TopBar({
     router.push('/auth/login')
   }
 
-  const handleDeleteAccount = async () => {
-    setPendingDeleteAccount(false)
+  const checkDeleteAccount = async () => {
+    setUserMenuOpen(false)
     const supabase = createClient()
-    // Delete owned boards (cascades to columns & tasks via FK)
+    // Find boards the user owns
     const { data: ownedBoards } = await supabase
       .from('boards')
       .select('id')
-      .eq('owner_id', user?.id)
-    if (ownedBoards && ownedBoards.length > 0) {
-      await supabase.from('boards').delete().in('id', ownedBoards.map((b) => b.id))
+      .eq('created_by', user?.id)
+
+    if (!ownedBoards || ownedBoards.length === 0) {
+      setDeleteAccountState('confirm')
+      return
     }
-    // Remove memberships
-    await supabase.from('board_members').delete().eq('user_id', user?.id)
+
+    // Check if any of those boards have OTHER members
+    const ownedIds = ownedBoards.map((b) => b.id)
+    const { data: otherMembers } = await supabase
+      .from('board_members')
+      .select('board_id')
+      .in('board_id', ownedIds)
+      .neq('user_id', user?.id)
+
+    const distinctBoards = new Set((otherMembers ?? []).map((m) => m.board_id))
+    if (distinctBoards.size > 0) {
+      setSharedBoardCount(distinctBoards.size)
+      setDeleteAccountState('warning')
+    } else {
+      setDeleteAccountState('confirm')
+    }
+  }
+
+  const handleDeleteAccount = async () => {
+    setDeleteAccountState(null)
+    await fetch('/api/delete-account', { method: 'POST' })
+    const supabase = createClient()
     await supabase.auth.signOut()
     router.push('/auth/login')
   }
@@ -275,7 +298,7 @@ export default function TopBar({
                 Log out
               </button>
               <button
-                onClick={() => { setUserMenuOpen(false); setPendingDeleteAccount(true) }}
+                onClick={checkDeleteAccount}
                 className="w-full text-left px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 transition-colors duration-150"
               >
                 Delete account
@@ -285,14 +308,25 @@ export default function TopBar({
         </div>
       </div>
 
-      {pendingDeleteAccount && (
+      {deleteAccountState === 'warning' && (
+        <ConfirmModal
+          message={`You own ${sharedBoardCount} board${sharedBoardCount > 1 ? 's' : ''} with other members`}
+          subMessage={`Deleting your account will permanently remove ${sharedBoardCount > 1 ? 'those boards' : 'that board'} and everyone on ${sharedBoardCount > 1 ? 'them' : 'it'} will lose access. This cannot be undone.`}
+          confirmLabel="Delete account"
+          danger
+          onConfirm={handleDeleteAccount}
+          onCancel={() => setDeleteAccountState(null)}
+        />
+      )}
+
+      {deleteAccountState === 'confirm' && (
         <ConfirmModal
           message="Delete your account?"
           subMessage="All your boards and tasks will be permanently removed. This cannot be undone."
           confirmLabel="Delete account"
           danger
           onConfirm={handleDeleteAccount}
-          onCancel={() => setPendingDeleteAccount(false)}
+          onCancel={() => setDeleteAccountState(null)}
         />
       )}
     </header>

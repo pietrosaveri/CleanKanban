@@ -1,104 +1,58 @@
-# Minimal Realtime Kanban
+<p align="center">
+  <img src="img/logo.png" alt="CleanKanban logo" width="300" />
+</p>
 
-A clean, minimal, realtime collaborative Kanban board.  
-Tech: **Next.js 15** · **TypeScript** · **Tailwind CSS** · **Supabase** (Auth + Postgres + Realtime)
+<h1 align="center">CleanKanban</h1>
 
----
+<p align="center">
+  A Kanban board that stays out of your way.
+</p>
 
-## Setup
-
-### 1. Create a Supabase project
-
-Go to [supabase.com](https://supabase.com) and create a new project.
-
-### 2. Run the database schema
-
-In the Supabase dashboard → **SQL Editor**, paste and run the contents of [`supabase/schema.sql`](supabase/schema.sql).
-
-### 3. Enable Google OAuth
-
-In Supabase dashboard → **Authentication → Providers → Google**:
-- Enable Google provider
-- Add your Google OAuth Client ID and Secret  
-  (Create credentials at [console.cloud.google.com](https://console.cloud.google.com))
-- Set the **Authorized redirect URI** in Google Cloud Console to:  
-  `https://<your-project-ref>.supabase.co/auth/v1/callback`
-
-### 4. Configure environment variables
-
-Copy the example file and fill in your values:
-
-```bash
-cp .env.local.example .env.local
-```
-
-Then edit `.env.local`:
-
-```
-NEXT_PUBLIC_SUPABASE_URL=https://your-project-ref.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
-```
-
-Both values are in **Supabase dashboard → Settings → API**.
-
-### 5. Install dependencies and run
-
-```bash
-npm install
-npm run dev
-```
-
-Open [http://localhost:3000](http://localhost:3000).
+<p align="center">
+  <a href="https://clean-kanban.vercel.app">
+    <img src="https://img.shields.io/badge/Try%20it%20live-%E2%86%92-black?style=for-the-badge" alt="Try it live" />
+  </a>
+</p>
 
 ---
 
-## Features
+Most Kanban tools are built for teams of 50, with roadmaps, epics, story points, integrations, automations, and a settings page you'll never touch. They solve problems you don't have.
 
-- **Google Auth** — login required, session persisted
-- **Boards** — create boards, share via 8-char join code, switch between boards
-- **Columns** — add, rename, delete, reorder left/right per board
-- **Tasks** — add, edit, delete, move up/down, move to another column, mark done
-- **Done history** — `/done` page lists completed tasks with done-date and source column
-- **Realtime** — all changes sync instantly across all connected clients via Supabase Realtime
+**CleanKanban is the opposite.**
 
----
+It's a board. With columns. And cards. You move cards across columns. When something's done, you mark it done. That's it.
 
-## Project structure
-
-```
-src/
-  app/
-    page.tsx              — Main Kanban board page
-    done/page.tsx         — Done history page
-    auth/login/page.tsx   — Login page (Google OAuth)
-    auth/callback/route.ts— OAuth callback handler
-    layout.tsx
-    globals.css
-  components/
-    TopBar.tsx            — Top navigation bar
-    Board.tsx             — Board layout (renders columns)
-    Column.tsx            — Column with task list
-    Task.tsx              — Individual task card
-    CreateBoardModal.tsx  — Create new board modal
-    JoinBoardModal.tsx    — Join board by code modal
-  lib/
-    supabaseClient.ts     — Browser Supabase client
-    supabaseServer.ts     — Server Supabase client
-  middleware.ts           — Auth guard (redirect if not logged in)
-  types/index.ts          — Shared TypeScript types
-supabase/
-  schema.sql              — Full database schema with RLS policies
-```
+No clutter. No onboarding. No cognitive overhead.  
+Just you, your team, and the work.
 
 ---
 
-## Deployment
+## What it does
 
-Deploy to [Vercel](https://vercel.com):
+- **Boards** — create one, share it with a short join code, done
+- **Columns** — add them, name them, reorder them
+- **Tasks** — add, edit, move between columns, mark as done
+- **Done history** — a simple log of everything you've completed
+- **Realtime** — every change shows up instantly for everyone on the board, no refresh needed
+- **Auth** — sign in with Google, stay signed in
 
-```bash
-npx vercel
-```
+---
 
-Set the same two environment variables in the Vercel project settings.  
-Add your production URL to Supabase **Authentication → URL Configuration → Redirect URLs**.
+## Built for teams but without the overhead
+
+CleanKanban is designed to work with other people, just without the setup friction that usually comes with it.
+
+**Here's how it works:**
+
+1. **Create a board** — sign in, hit "New Board", give it a name.
+2. **Share the join code** — every board gets a short, unique code (e.g. `XK39F`). Copy it and send it to your team in a message, a thread, wherever.
+3. **Everyone joins instantly** — teammates open CleanKanban, click "Join Board", paste the code, and they're in. No invitations. No email confirmations. No account setup beyond signing in.
+4. **Work together in real time** — every card moved, every task added, every column renamed shows up live for everyone on the board. No refreshing. No merge conflicts. Everyone sees the same board, always.
+
+That's the entire collaboration model. One code. Everyone's in. Start working.
+
+---
+
+## Stack
+
+**Next.js 15** · **TypeScript** · **Tailwind CSS** · **Supabase** (Auth + Postgres + Realtime)
