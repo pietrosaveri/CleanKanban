@@ -145,7 +145,13 @@ export default function HomePage() {
         (payload) => {
           const t = payload.new as Task
           if (t.done) {
-            setTasks((prev) => prev.filter((x) => x.id !== t.id))
+            // Delay removal so a locally-running completion animation (1 s) can
+            // finish before the component is unmounted.  For remote completions
+            // the 1.2 s delay is imperceptible.
+            setTimeout(
+              () => setTasks((prev) => prev.filter((x) => x.id !== t.id)),
+              1200
+            )
           } else {
             setTasks((prev) =>
               prev

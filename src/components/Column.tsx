@@ -98,18 +98,10 @@ export default function ColumnComponent({
     <>
       <div
         ref={colRef}
-        draggable={!editingName && !addingTask}
-        onDragStart={(e) => {
-          if (editingName || addingTask) { e.preventDefault(); return }
-          e.dataTransfer.effectAllowed = 'move'
-          if (colRef.current) e.dataTransfer.setDragImage(colRef.current, 130, 20)
-          onColDragStart(column.id)
-        }}
-        onDragEnd={onDragEnd}
-        className={`flex-shrink-0 w-72 flex flex-col rounded-2xl transition-all duration-200 cursor-grab active:cursor-grabbing select-none ${
+        className={`flex-shrink-0 w-72 flex flex-col rounded-2xl transition-all duration-200 select-none border border-gray-200 ${
           isDraggingThisCol
-            ? 'ring-2 ring-blue-500 bg-blue-50/60 shadow-lg shadow-blue-100 opacity-60'
-            : 'bg-gray-50/80 hover:bg-gray-100/60'
+            ? 'opacity-40 bg-white ring-2 ring-black ring-offset-2 shadow-none'
+            : 'bg-white shadow-sm hover:shadow-md'
         }`}
         onDragOver={(e) => {
           if (dndState.draggingColId && dndState.draggingColId !== column.id) {
@@ -134,6 +126,19 @@ export default function ColumnComponent({
           }
         }}
       >
+        {/* Column drag handle */}
+        <div
+          draggable={!editingName && !addingTask}
+          onDragStart={(e) => {
+            if (editingName || addingTask) { e.preventDefault(); return }
+            e.dataTransfer.effectAllowed = 'move'
+            if (colRef.current) e.dataTransfer.setDragImage(colRef.current, 130, 20)
+            onColDragStart(column.id)
+          }}
+          onDragEnd={onDragEnd}
+          className="mx-3 mt-2.5 h-1.5 rounded-full bg-gray-200 hover:bg-gray-300 cursor-grab active:cursor-grabbing transition-colors duration-150"
+        />
+
         {/* Header */}
         <div className="flex items-center gap-2 px-4 py-3">
           {editingName ? (
@@ -182,7 +187,7 @@ export default function ColumnComponent({
               <div
                 className={`transition-all duration-100 mx-1 rounded-full ${
                   dndState.dragOverTaskId === task.id && dndState.draggingTaskId
-                    ? 'h-0.5 bg-blue-500 my-1'
+                    ? 'h-0.5 bg-black my-1'
                     : 'h-0'
                 }`}
                 onDragOver={(e) => {
@@ -209,7 +214,7 @@ export default function ColumnComponent({
           <div
             className={`min-h-[16px] rounded-xl transition-all duration-100 ${
               dndState.dragOverColForTask === column.id && !dndState.dragOverTaskId && dndState.draggingTaskId
-                ? 'border-2 border-dashed border-blue-300 bg-blue-50/50 min-h-10'
+                ? 'border-2 border-dashed border-gray-300 bg-gray-50 min-h-10'
                 : ''
             }`}
             onDragOver={(e) => {

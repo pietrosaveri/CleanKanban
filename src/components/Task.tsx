@@ -4,6 +4,9 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabaseClient'
 import type { Column, Task } from '@/types'
 
+// Approximate SVG path length for M1 4L3.5 6.5L9 1
+const TICK_PATH_LEN = 13
+
 interface TaskProps {
   task: Task
   column: Column
@@ -29,6 +32,9 @@ export default function TaskComponent({
 }: TaskProps) {
   const [editing, setEditing] = useState(false)
   const [text, setText] = useState(task.text)
+  const [completing, setCompleting] = useState(false)
+  const [striking, setStriking] = useState(false)
+  const [leaving, setLeaving] = useState(false)
 
   // Sync text from realtime updates
   useEffect(() => {
@@ -55,31 +61,39 @@ export default function TaskComponent({
     await supabase.from('tasks').delete().eq('id', task.id)
   }
 
-  const markDone = async () => {
-    // Optimistic: remove from active tasks immediately
-    onTaskDeleted(task.id)
+  const handleComplete = async () => {
+    if (completing) return
+    setCompleting(true)
+
+    // Start animation timers immediately so they're not blocked by the DB round-trip
+    // tick draws in (0–300ms) → strikethrough (300–650ms) → fade (700–950ms) → remove
+    setTimeout(() => setStriking(true), 300)
+    setTimeout(() => setLeaving(true), 700)
+    setTimeout(() => onTaskDeleted(task.id), 1000)
+
+    // Await is required: PostgrestBuilder is a lazy PromiseLike — without it the
+    // HTTP fetch never runs and the DB is never updated.
     const supabase = createClient()
-    await supabase
-      .from('tasks')
-      .update({
-        done: true,
-        done_at: new Date().toISOString(),
-        done_from_column: column.name,
-      })
-      .eq('id', task.id)
+    await supabase.from('tasks').update({
+      done: true,
+      done_at: new Date().toISOString(),
+      done_from_column: column.name,
+    }).eq('id', task.id)
   }
 
   // ── render ────────────────────────────────────────────────────
   return (
     <div
-      className={`relative bg-white border rounded p-2 group transition-all duration-100 ${
+      className={`relative bg-white border rounded-xl p-2 group transition-all duration-300 ${
         isDragging
-          ? 'opacity-40 border-blue-300 shadow-sm'
-          : 'border-gray-200 cursor-grab active:cursor-grabbing'
+          ? 'opacity-40 border-gray-300 shadow-none'
+          : leaving
+          ? 'opacity-0 scale-95'
+          : 'border-gray-200 shadow-sm hover:shadow-md cursor-grab active:cursor-grabbing'
       }`}
-      draggable={!editing}
+      draggable={!editing && !completing}
       onDragStart={(e) => {
-        if (editing) {
+        if (editing || completing) {
           e.preventDefault()
           return
         }
@@ -100,52 +114,82 @@ export default function TaskComponent({
     >
       {/* Insert-before indicator */}
       {isDragTarget && !isDragging && (
-        <div className="absolute -top-px left-0 right-0 h-0.5 bg-blue-500 rounded-full z-10" />
+        <div className="absolute -top-px left-0 right-0 h-0.5 bg-black rounded-full z-10" />
       )}
 
-      {editing ? (
-        <textarea
-          autoFocus
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          onBlur={saveText}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-              e.preventDefault()
-              saveText()
-            }
-            if (e.key === 'Escape') {
-              setText(task.text)
-              setEditing(false)
-            }
-          }}
-          rows={2}
-          className="w-full text-sm bg-transparent outline-none resize-none cursor-text select-text"
-          onClick={(e) => e.stopPropagation()}
-        />
-      ) : (
-        <p
-          className="text-sm cursor-pointer whitespace-pre-wrap break-words"
-          onClick={() => setEditing(true)}
-        >
-          {task.text}
-        </p>
-      )}
-
-      {/* Action bar — visible on hover */}
-      <div className="flex items-center gap-1.5 mt-2 opacity-0 group-hover:opacity-100 transition-opacity duration-100">
+      <div className="flex items-start gap-2">
+        {/* ── Done circle ── */}
         <button
-          onClick={markDone}
-          className="text-xs text-gray-400 hover:text-black transition-colors duration-100"
+          onClick={(e) => { e.stopPropagation(); handleComplete() }}
           title="Mark as done"
+          className={`mt-0.5 flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all duration-300 ${
+            completing
+              ? 'border-black bg-black scale-110'
+              : 'border-gray-300 hover:border-gray-600 hover:scale-105 cursor-pointer'
+          }`}
         >
-          done
+          <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+            <path
+              d="M1 4L3.5 6.5L9 1"
+              stroke="white"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              style={{
+                strokeDasharray: TICK_PATH_LEN,
+                strokeDashoffset: completing ? 0 : TICK_PATH_LEN,
+                transition: 'stroke-dashoffset 0.28s ease 0.04s',
+              }}
+            />
+          </svg>
         </button>
 
+        {/* ── Task text ── */}
+        <div className="flex-1 min-w-0 relative">
+          {editing ? (
+            <textarea
+              autoFocus
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              onBlur={saveText}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault()
+                  saveText()
+                }
+                if (e.key === 'Escape') {
+                  setText(task.text)
+                  setEditing(false)
+                }
+              }}
+              rows={2}
+              className="w-full text-sm bg-transparent outline-none resize-none cursor-text select-text"
+              onClick={(e) => e.stopPropagation()}
+            />
+          ) : (
+            <p
+              className="text-sm whitespace-pre-wrap break-words cursor-pointer"
+              onClick={() => !completing && setEditing(true)}
+            >
+              {task.text}
+            </p>
+          )}
+
+          {/* Animated strikethrough */}
+          <div
+            className="absolute top-1/2 -translate-y-1/2 left-0 h-px bg-gray-500 pointer-events-none"
+            style={{
+              width: striking ? '100%' : '0%',
+              transition: striking ? 'width 0.35s ease-in-out' : 'none',
+            }}
+          />
+        </div>
+
+        {/* ── Delete × ── */}
         <button
-          onClick={deleteTask}
-          className="text-xs text-gray-400 hover:text-red-600 ml-auto transition-colors duration-100"
+          onClick={(e) => { e.stopPropagation(); deleteTask() }}
           title="Delete task"
+          className="mt-0.5 flex-shrink-0 opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-500 text-base leading-none transition-all duration-100 cursor-pointer"
         >
           ×
         </button>

@@ -30,6 +30,9 @@ export default function TopBar({
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const userMenuRef = useRef<HTMLDivElement>(null)
   const [pendingDeleteAccount, setPendingDeleteAccount] = useState(false)
+  const [joinCodeOpen, setJoinCodeOpen] = useState(false)
+  const joinCodeRef = useRef<HTMLDivElement>(null)
+  const [copied, setCopied] = useState(false)
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -51,6 +54,23 @@ export default function TopBar({
     if (userMenuOpen) document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
   }, [userMenuOpen])
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (joinCodeRef.current && !joinCodeRef.current.contains(e.target as Node)) {
+        setJoinCodeOpen(false)
+      }
+    }
+    if (joinCodeOpen) document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [joinCodeOpen])
+
+  const handleCopyJoinCode = () => {
+    if (!currentBoard) return
+    navigator.clipboard.writeText(currentBoard.join_code)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
 
   const handleLogout = async () => {
     const supabase = createClient()
@@ -189,6 +209,43 @@ export default function TopBar({
           >
             Done history
           </Link>
+        )}
+
+        {/* Join code */}
+        {currentBoard && (
+          <div className="relative" ref={joinCodeRef}>
+            <button
+              onClick={() => setJoinCodeOpen((v) => !v)}
+              className={`text-sm transition-colors duration-150 whitespace-nowrap border rounded-lg px-3 py-1 font-medium ${
+                joinCodeOpen
+                  ? 'border-black bg-black text-white'
+                  : 'border-gray-200 hover:border-gray-400 text-gray-500 hover:text-black'
+              }`}
+              title="Show join code"
+            >
+              Join code
+            </button>
+            {joinCodeOpen && (
+              <div className="absolute right-0 top-full mt-2 z-50 bg-white border border-gray-200 rounded-xl shadow-lg w-56 p-3">
+                <p className="text-xs text-gray-400 mb-1.5 font-medium uppercase tracking-wide">Board join code</p>
+                <div className="flex items-center gap-2">
+                  <span className="flex-1 font-mono text-sm bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1.5 select-all text-gray-800 tracking-widest">
+                    {currentBoard.join_code}
+                  </span>
+                  <button
+                    onClick={handleCopyJoinCode}
+                    className={`px-2.5 py-1.5 text-xs rounded-lg border transition-colors duration-150 font-medium shrink-0 ${
+                      copied
+                        ? 'bg-green-50 border-green-300 text-green-600'
+                        : 'border-gray-200 hover:border-gray-400 text-gray-600 hover:text-black'
+                    }`}
+                  >
+                    {copied ? 'Copied!' : 'Copy'}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         )}
 
         {/* User circle */}

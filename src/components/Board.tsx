@@ -1,6 +1,6 @@
 'use client'
 
-import { Fragment, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabaseClient'
 import type { Board, Column, Task } from '@/types'
 import ColumnComponent from './Column'
@@ -29,6 +29,15 @@ export default function BoardView({ board, columns, tasks, onColumnDeleted, onTa
   const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null)
   const [dragOverTaskId, setDragOverTaskId] = useState<string | null>(null)
   const [dragOverColForTask, setDragOverColForTask] = useState<string | null>(null)
+  // Holds the reordered columns immediately after a drop so the UI doesn't
+  // flash back to the original order while waiting for the realtime update.
+  const [optimisticColumns, setOptimisticColumns] = useState<Column[] | null>(null)
+
+  // Once Supabase realtime delivers the confirmed positions, drop the
+  // optimistic override so we render from the source of truth again.
+  useEffect(() => {
+    setOptimisticColumns(null)
+  }, [columns])
 
   const addColumn = async () => {
     const supabase = createClient()
@@ -72,6 +81,8 @@ export default function BoardView({ board, columns, tasks, onColumnDeleted, onTa
     )
     without.splice(adjustedIdx, 0, sorted[draggingIdx])
     if (without.every((col, i) => col.id === sorted[i]?.id)) return
+    // Apply immediately so the UI stays in place while the DB round-trip happens
+    setOptimisticColumns([...without])
     const supabase = createClient()
     await Promise.all(
       without.map((col, i) => supabase.from('columns').update({ position: i }).eq('id', col.id))
@@ -153,43 +164,55 @@ export default function BoardView({ board, columns, tasks, onColumnDeleted, onTa
     dragOverColForTask,
   }
 
+  // Compute live preview order while dragging a column.
+  // Uses the same index-adjustment logic as handleColDrop so the preview
+  // always matches what will actually be saved on drop.
+  // Fall back to optimisticColumns (post-drop) then sortedColumns (confirmed).
+  let displayColumns = optimisticColumns ?? sortedColumns
+  if (draggingColId && dragInsertIdx !== null) {
+    const draggingIdx = sortedColumns.findIndex((c) => c.id === draggingColId)
+    if (draggingIdx !== -1) {
+      const without = sortedColumns.filter((c) => c.id !== draggingColId)
+      const adjustedIdx = Math.min(
+        dragInsertIdx > draggingIdx ? dragInsertIdx - 1 : dragInsertIdx,
+        without.length
+      )
+      const reordered = [...without]
+      reordered.splice(adjustedIdx, 0, sortedColumns[draggingIdx])
+      displayColumns = reordered
+    }
+  }
+
   return (
     <div
-      className="flex items-start gap-3 p-5 overflow-x-auto min-h-[calc(100vh-48px)]"
+      className="flex items-start gap-3 p-5 overflow-x-auto min-h-[calc(100vh-48px)] bg-gray-50"
       onDragOver={(e) => { if (draggingColId) e.preventDefault() }}
       onDrop={(e) => { if (draggingColId) { e.preventDefault(); handleColDrop() } }}
     >
-      {sortedColumns.map((column, index) => (
-        <Fragment key={column.id}>
-          {draggingColId && dragInsertIdx === index && (
-            <div className="flex-shrink-0 w-1 self-stretch rounded-full bg-blue-500 min-h-32" />
-          )}
-          <ColumnComponent
-            column={column}
-            colIndex={index}
-            tasks={tasks.filter((t) => t.column_id === column.id)}
-            board={board}
-            onColumnDeleted={onColumnDeleted}
-            onTaskDeleted={onTaskDeleted}
-            dndState={dndState}
-            onColDragStart={handleColDragStart}
-            onColDragOver={handleColDragOver}
-            onColDrop={handleColDrop}
-            onTaskDragStart={handleTaskDragStart}
-            onTaskDragOverTask={handleTaskDragOverTask}
-            onTaskDragOverColEnd={handleTaskDragOverColEnd}
-            onTaskDrop={handleTaskDrop}
-            onDragEnd={clearDrag}
-          />
-        </Fragment>
+      {displayColumns.map((column, index) => (
+        <ColumnComponent
+          key={column.id}
+          column={column}
+          colIndex={index}
+          tasks={tasks.filter((t) => t.column_id === column.id)}
+          board={board}
+          onColumnDeleted={onColumnDeleted}
+          onTaskDeleted={onTaskDeleted}
+          dndState={dndState}
+          onColDragStart={handleColDragStart}
+          onColDragOver={handleColDragOver}
+          onColDrop={handleColDrop}
+          onTaskDragStart={handleTaskDragStart}
+          onTaskDragOverTask={handleTaskDragOverTask}
+          onTaskDragOverColEnd={handleTaskDragOverColEnd}
+          onTaskDrop={handleTaskDrop}
+          onDragEnd={clearDrag}
+        />
       ))}
-      {draggingColId && dragInsertIdx === sortedColumns.length && (
-        <div className="flex-shrink-0 w-1 self-stretch rounded-full bg-blue-500 min-h-32" />
-      )}
 
       <button
         onClick={addColumn}
-        className="flex-shrink-0 w-72 h-12 border-2 border-dashed border-gray-200 rounded-2xl text-sm text-gray-400 hover:border-gray-400 hover:text-gray-600 transition-all duration-200"
+        className="flex-shrink-0 w-72 h-12 border-2 border-dashed border-gray-300 rounded-2xl text-sm text-gray-400 hover:border-gray-500 hover:text-gray-700 hover:bg-white transition-all duration-200"
       >
         + Add column
       </button>

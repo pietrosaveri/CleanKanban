@@ -18,7 +18,7 @@ export default function LoginPage() {
   return (
     <main className="min-h-screen flex items-center justify-center">
       <div className="text-center">
-        <h1 className="text-2xl font-medium tracking-tight mb-1">Kanban</h1>
+        <h1 className="text-2xl font-medium tracking-tight mb-1">Clean Kanban</h1>
         <p className="text-sm text-gray-400 mb-10">Minimal realtime collaborative board</p>
         <button
           onClick={handleLogin}
