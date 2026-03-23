@@ -2,17 +2,16 @@
   <img src="img/logo.png" alt="CleanKanban logo" width="300" />
 </p>
 
-<h1 align="center">CleanKanban</h1>
-
-<p align="center">
-  A Kanban board that stays out of your way.
-</p>
-
 <p align="center">
   <a href="https://clean-kanban.vercel.app">
     <img src="https://img.shields.io/badge/Try%20it%20live-%E2%86%92-black?style=for-the-badge" alt="Try it live" />
   </a>
 </p>
+
+<p align="center">
+  A Kanban board that stays out of your way.
+</p>
+
 
 ---
 
