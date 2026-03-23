@@ -5,6 +5,7 @@ export const dynamic = 'force-dynamic'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabaseClient'
+import ConfirmModal from '@/components/ConfirmModal'
 import type { Board, Task } from '@/types'
 
 export default function DonePage() {
@@ -13,6 +14,7 @@ export default function DonePage() {
   const [doneTasks, setDoneTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
   const [clearing, setClearing] = useState(false)
+  const [pendingClear, setPendingClear] = useState(false)
 
   useEffect(() => {
     const loadBoards = async () => {
@@ -68,10 +70,13 @@ export default function DonePage() {
     loadDone()
   }, [selectedBoardId]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const clearDoneHistory = async () => {
-    if (!selectedBoardId) return
-    const count = doneTasks.length
-    if (!confirm(`Permanently delete all ${count} completed task${count !== 1 ? 's' : ''}? This cannot be undone.`)) return
+  const clearDoneHistory = () => {
+    if (!selectedBoardId || doneTasks.length === 0) return
+    setPendingClear(true)
+  }
+
+  const confirmClear = async () => {
+    setPendingClear(false)
     setClearing(true)
     const supabase = createClient()
     await supabase
@@ -171,6 +176,17 @@ export default function DonePage() {
           </table>
         )}
       </main>
+
+      {pendingClear && (
+        <ConfirmModal
+          message={`Clear all ${doneTasks.length} completed task${doneTasks.length !== 1 ? 's' : ''}?`}
+          subMessage="This permanently removes them and cannot be undone."
+          confirmLabel="Clear all"
+          danger
+          onConfirm={confirmClear}
+          onCancel={() => setPendingClear(false)}
+        />
+      )}
     </div>
   )
 }

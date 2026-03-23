@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabaseClient'
 import type { Board, User } from '@/types'
+import ConfirmModal from './ConfirmModal'
 
 interface TopBarProps {
   boards: Board[]
@@ -26,6 +27,9 @@ export default function TopBar({
   const router = useRouter()
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
+  const [userMenuOpen, setUserMenuOpen] = useState(false)
+  const userMenuRef = useRef<HTMLDivElement>(null)
+  const [pendingDeleteAccount, setPendingDeleteAccount] = useState(false)
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -38,8 +42,35 @@ export default function TopBar({
     return () => document.removeEventListener('mousedown', handler)
   }, [menuOpen])
 
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setUserMenuOpen(false)
+      }
+    }
+    if (userMenuOpen) document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [userMenuOpen])
+
   const handleLogout = async () => {
     const supabase = createClient()
+    await supabase.auth.signOut()
+    router.push('/auth/login')
+  }
+
+  const handleDeleteAccount = async () => {
+    setPendingDeleteAccount(false)
+    const supabase = createClient()
+    // Delete owned boards (cascades to columns & tasks via FK)
+    const { data: ownedBoards } = await supabase
+      .from('boards')
+      .select('id')
+      .eq('owner_id', user?.id)
+    if (ownedBoards && ownedBoards.length > 0) {
+      await supabase.from('boards').delete().in('id', ownedBoards.map((b) => b.id))
+    }
+    // Remove memberships
+    await supabase.from('board_members').delete().eq('user_id', user?.id)
     await supabase.auth.signOut()
     router.push('/auth/login')
   }
@@ -49,6 +80,12 @@ export default function TopBar({
     user?.user_metadata?.name ||
     user?.email?.split('@')[0] ||
     'User'
+
+  const initials = displayName
+    .split(' ')
+    .slice(0, 2)
+    .map((w: string) => w[0]?.toUpperCase() ?? '')
+    .join('')
 
   return (
     <header className="border-b border-gray-200 px-4 h-12 flex items-center gap-3">
@@ -144,25 +181,63 @@ export default function TopBar({
       </div>
 
       {/* Right side */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2">
         {currentBoard && (
           <Link
             href="/done"
-            className="text-sm text-gray-400 hover:text-black transition-colors duration-150 whitespace-nowrap"
+            className="text-sm text-gray-500 hover:text-black transition-colors duration-150 whitespace-nowrap border border-gray-200 hover:border-gray-400 rounded-lg px-3 py-1 font-medium"
           >
             Done history
           </Link>
         )}
 
-        <span className="text-xs text-gray-300 hidden sm:block">{displayName}</span>
+        {/* User circle */}
+        <div className="relative" ref={userMenuRef}>
+          <button
+            onClick={() => setUserMenuOpen((v) => !v)}
+            className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold select-none transition-all duration-150 ${
+              userMenuOpen
+                ? 'bg-black text-white'
+                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+            }`}
+            title={displayName}
+          >
+            {initials || '?'}
+          </button>
 
-        <button
-          onClick={handleLogout}
-          className="text-sm text-gray-400 hover:text-black transition-colors duration-150"
-        >
-          Logout
-        </button>
+          {userMenuOpen && (
+            <div className="absolute right-0 top-full mt-2 z-50 bg-white border border-gray-200 rounded-xl shadow-lg w-56 overflow-hidden py-1">
+              {/* Email */}
+              <div className="px-4 py-2.5 border-b border-gray-100">
+                <p className="text-xs text-gray-400 truncate">{user?.email}</p>
+              </div>
+              <button
+                onClick={() => { setUserMenuOpen(false); handleLogout() }}
+                className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-150"
+              >
+                Log out
+              </button>
+              <button
+                onClick={() => { setUserMenuOpen(false); setPendingDeleteAccount(true) }}
+                className="w-full text-left px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 transition-colors duration-150"
+              >
+                Delete account
+              </button>
+            </div>
+          )}
+        </div>
       </div>
+
+      {pendingDeleteAccount && (
+        <ConfirmModal
+          message="Delete your account?"
+          subMessage="All your boards and tasks will be permanently removed. This cannot be undone."
+          confirmLabel="Delete account"
+          danger
+          onConfirm={handleDeleteAccount}
+          onCancel={() => setPendingDeleteAccount(false)}
+        />
+      )}
     </header>
   )
 }

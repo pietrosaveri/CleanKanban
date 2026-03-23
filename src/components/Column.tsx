@@ -1,23 +1,23 @@
 'use client'
 
-import { Fragment, useEffect, useState } from 'react'
+import { Fragment, useEffect, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabaseClient'
 import type { Board, Column, Task } from '@/types'
 import TaskComponent from './Task'
+import ConfirmModal from './ConfirmModal'
 import type { DnDState } from './Board'
 
 interface ColumnProps {
   column: Column
-  columns: Column[]
+  colIndex: number
   tasks: Task[]
   board: Board
   onColumnDeleted: (id: string) => void
   onTaskDeleted: (id: string) => void
   dndState: DnDState
   onColDragStart: (colId: string) => void
-  onColDragOver: (colId: string) => void
-  onColDragLeave: () => void
-  onColDrop: (colId: string) => void
+  onColDragOver: (insertIdx: number) => void
+  onColDrop: () => void
   onTaskDragStart: (taskId: string) => void
   onTaskDragOverTask: (taskId: string) => void
   onTaskDragOverColEnd: (colId: string) => void
@@ -27,7 +27,7 @@ interface ColumnProps {
 
 export default function ColumnComponent({
   column,
-  columns,
+  colIndex,
   tasks,
   board,
   onColumnDeleted,
@@ -35,7 +35,6 @@ export default function ColumnComponent({
   dndState,
   onColDragStart,
   onColDragOver,
-  onColDragLeave,
   onColDrop,
   onTaskDragStart,
   onTaskDragOverTask,
@@ -47,6 +46,8 @@ export default function ColumnComponent({
   const [columnName, setColumnName] = useState(column.name)
   const [addingTask, setAddingTask] = useState(false)
   const [newTaskText, setNewTaskText] = useState('')
+  const [pendingDelete, setPendingDelete] = useState(false)
+  const colRef = useRef<HTMLDivElement>(null)
 
   // Sync column name when updated via realtime
   useEffect(() => {
@@ -54,9 +55,7 @@ export default function ColumnComponent({
   }, [column.name]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const sortedTasks = [...tasks].sort((a, b) => a.position - b.position)
-
   const isDraggingThisCol = dndState.draggingColId === column.id
-  const isDragTargetCol = dndState.dragOverColId === column.id
 
   // ── mutations ─────────────────────────────────────────────────
   const renameColumn = async () => {
@@ -71,14 +70,8 @@ export default function ColumnComponent({
     setEditingName(false)
   }
 
-  const deleteColumn = async () => {
-    const count = tasks.length
-    const msg =
-      count > 0
-        ? `Delete "${column.name}" and its ${count} task${count > 1 ? 's' : ''}?`
-        : `Delete column "${column.name}"?`
-    if (!confirm(msg)) return
-    // Optimistic: update parent state immediately
+  const confirmDelete = async () => {
+    setPendingDelete(false)
     onColumnDeleted(column.id)
     const supabase = createClient()
     await supabase.from('columns').delete().eq('id', column.id)
@@ -102,116 +95,103 @@ export default function ColumnComponent({
 
   // ── render ────────────────────────────────────────────────────
   return (
-    <div
-      className={`flex-shrink-0 w-64 flex flex-col bg-gray-50 rounded border transition-all duration-150 ${
-        isDraggingThisCol
-          ? 'opacity-40 border-blue-300'
-          : isDragTargetCol
-          ? 'border-blue-500 ring-1 ring-blue-500'
-          : 'border-gray-200'
-      }`}
-      onDragOver={(e) => {
-        if (dndState.draggingColId && dndState.draggingColId !== column.id) {
-          e.preventDefault()
-          onColDragOver(column.id)
-        } else if (dndState.draggingTaskId) {
-          e.preventDefault()
-          onTaskDragOverColEnd(column.id)
-        }
-      }}
-      onDragLeave={(e) => {
-        if (!e.currentTarget.contains(e.relatedTarget as Node)) {
-          if (dndState.draggingColId) onColDragLeave()
-        }
-      }}
-      onDrop={(e) => {
-        e.preventDefault()
-        if (dndState.draggingColId) {
-          onColDrop(column.id)
-        } else if (dndState.draggingTaskId) {
-          onTaskDrop(column.id, null)
-        }
-      }}
-    >
-      {/* Header */}
-      <div className="flex items-center gap-1 px-2 py-2 border-b border-gray-200">
-        {/* Drag handle */}
-        <span
-          className="text-gray-300 hover:text-gray-500 cursor-grab active:cursor-grabbing shrink-0 select-none text-base leading-none mr-0.5"
-          draggable
-          onDragStart={(e) => {
+    <>
+      <div
+        ref={colRef}
+        draggable={!editingName && !addingTask}
+        onDragStart={(e) => {
+          if (editingName || addingTask) { e.preventDefault(); return }
+          e.dataTransfer.effectAllowed = 'move'
+          if (colRef.current) e.dataTransfer.setDragImage(colRef.current, 130, 20)
+          onColDragStart(column.id)
+        }}
+        onDragEnd={onDragEnd}
+        className={`flex-shrink-0 w-72 flex flex-col rounded-2xl transition-all duration-200 cursor-grab active:cursor-grabbing select-none ${
+          isDraggingThisCol
+            ? 'ring-2 ring-blue-500 bg-blue-50/60 shadow-lg shadow-blue-100 opacity-60'
+            : 'bg-gray-50/80 hover:bg-gray-100/60'
+        }`}
+        onDragOver={(e) => {
+          if (dndState.draggingColId && dndState.draggingColId !== column.id) {
+            e.preventDefault()
             e.stopPropagation()
-            e.dataTransfer.effectAllowed = 'move'
-            onColDragStart(column.id)
-          }}
-          onDragEnd={onDragEnd}
-          title="Drag to reorder"
-        >
-          ⠿
-        </span>
-
-        {editingName ? (
-          <input
-            autoFocus
-            value={columnName}
-            onChange={(e) => setColumnName(e.target.value)}
-            onBlur={renameColumn}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') renameColumn()
-              if (e.key === 'Escape') {
-                setColumnName(column.name)
-                setEditingName(false)
-              }
-            }}
-            className="flex-1 text-sm font-medium bg-transparent outline-none border-b border-black min-w-0"
-          />
-        ) : (
-          <span
-            className="flex-1 text-sm font-medium cursor-pointer truncate"
-            onClick={() => setEditingName(true)}
-            title="Click to rename"
-          >
-            {column.name}
-          </span>
-        )}
-
-        <span className="text-xs text-gray-300 shrink-0">{tasks.length}</span>
-        <button
-          onClick={deleteColumn}
-          className="text-xs text-gray-400 hover:text-red-600 transition-colors duration-100 px-0.5"
-          title="Delete column"
-        >
-          ×
-        </button>
-      </div>
-
-      {/* Tasks */}
-      <div className="flex-1 px-2 pt-2 overflow-y-auto max-h-[calc(100vh-120px)]">
-        {sortedTasks.map((task) => (
-          <Fragment key={task.id}>
-            {/* Drop indicator: blue line above this task when drag target */}
-            <div
-              className={`h-0.5 rounded-full mx-1 transition-all duration-100 ${
-                dndState.dragOverTaskId === task.id && dndState.draggingTaskId
-                  ? 'bg-blue-500 mb-1'
-                  : 'bg-transparent'
-              }`}
-              onDragOver={(e) => {
-                if (dndState.draggingTaskId) {
-                  e.preventDefault()
-                  e.stopPropagation()
-                  onTaskDragOverTask(task.id)
-                }
+            const rect = colRef.current?.getBoundingClientRect()
+            if (rect) {
+              const isLeftHalf = e.clientX < rect.left + rect.width / 2
+              onColDragOver(isLeftHalf ? colIndex : colIndex + 1)
+            }
+          } else if (dndState.draggingTaskId) {
+            e.preventDefault()
+            onTaskDragOverColEnd(column.id)
+          }
+        }}
+        onDrop={(e) => {
+          e.preventDefault()
+          if (dndState.draggingColId) {
+            onColDrop()
+          } else if (dndState.draggingTaskId) {
+            onTaskDrop(column.id, null)
+          }
+        }}
+      >
+        {/* Header */}
+        <div className="flex items-center gap-2 px-4 py-3">
+          {editingName ? (
+            <input
+              autoFocus
+              value={columnName}
+              onChange={(e) => setColumnName(e.target.value)}
+              onBlur={renameColumn}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') renameColumn()
+                if (e.key === 'Escape') { setColumnName(column.name); setEditingName(false) }
               }}
-              onDrop={(e) => {
-                if (dndState.draggingTaskId) {
-                  e.preventDefault()
-                  e.stopPropagation()
-                  onTaskDrop(column.id, task.id)
-                }
-              }}
+              className="flex-1 text-sm font-semibold bg-transparent outline-none border-b border-black min-w-0 py-0.5"
+              onClick={(e) => e.stopPropagation()}
             />
-            <div className="mb-2">
+          ) : (
+            <span
+              className="flex-1 text-sm font-semibold cursor-text truncate tracking-tight"
+              onClick={(e) => { e.stopPropagation(); setEditingName(true) }}
+              title="Click to rename"
+            >
+              {column.name}
+            </span>
+          )}
+          <span className="text-[11px] text-gray-400 tabular-nums shrink-0 bg-gray-200/60 rounded-full px-1.5 py-0.5 font-medium">
+            {tasks.length}
+          </span>
+          <button
+            onClick={(e) => { e.stopPropagation(); setPendingDelete(true) }}
+            className="w-7 h-7 flex items-center justify-center rounded-full text-gray-400 hover:bg-red-50 hover:text-red-500 transition-all duration-150 shrink-0"
+            title="Delete column"
+          >
+            <svg width="13" height="13" viewBox="0 0 12 12" fill="none">
+              <path d="M2.5 2.5l7 7M2.5 9.5l7 -7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Divider */}
+        <div className="mx-4 h-px bg-gray-200/80" />
+
+        {/* Tasks */}
+        <div className="flex-1 px-3 pt-3 pb-2 overflow-y-auto max-h-[calc(100vh-160px)]">
+          {sortedTasks.map((task) => (
+            <Fragment key={task.id}>
+              <div
+                className={`transition-all duration-100 mx-1 rounded-full ${
+                  dndState.dragOverTaskId === task.id && dndState.draggingTaskId
+                    ? 'h-0.5 bg-blue-500 my-1'
+                    : 'h-0'
+                }`}
+                onDragOver={(e) => {
+                  if (dndState.draggingTaskId) { e.preventDefault(); e.stopPropagation(); onTaskDragOverTask(task.id) }
+                }}
+                onDrop={(e) => {
+                  if (dndState.draggingTaskId) { e.preventDefault(); e.stopPropagation(); onTaskDrop(column.id, task.id) }
+                }}
+              />
               <TaskComponent
                 task={task}
                 column={column}
@@ -220,90 +200,87 @@ export default function ColumnComponent({
                 isDragTarget={dndState.dragOverTaskId === task.id}
                 onDragStart={() => onTaskDragStart(task.id)}
                 onDragEnd={onDragEnd}
-                onDragOverAsTarget={() => {
-                  if (dndState.draggingTaskId) onTaskDragOverTask(task.id)
-                }}
-                onDropOnTask={() => {
-                  if (dndState.draggingTaskId) onTaskDrop(column.id, task.id)
-                }}
+                onDragOverAsTarget={() => { if (dndState.draggingTaskId) onTaskDragOverTask(task.id) }}
+                onDropOnTask={() => { if (dndState.draggingTaskId) onTaskDrop(column.id, task.id) }}
               />
-            </div>
-          </Fragment>
-        ))}
+            </Fragment>
+          ))}
 
-        {/* End-of-column drop zone */}
-        <div
-          className={`min-h-[32px] rounded mb-2 transition-all duration-100 ${
-            dndState.dragOverColForTask === column.id &&
-            !dndState.dragOverTaskId &&
-            dndState.draggingTaskId
-              ? 'border border-dashed border-blue-300 bg-blue-50'
-              : ''
-          }`}
-          onDragOver={(e) => {
-            if (dndState.draggingTaskId) {
-              e.preventDefault()
-              e.stopPropagation()
-              onTaskDragOverColEnd(column.id)
-            }
-          }}
-          onDrop={(e) => {
-            if (dndState.draggingTaskId) {
-              e.preventDefault()
-              e.stopPropagation()
-              onTaskDrop(column.id, null)
-            }
-          }}
-        />
+          <div
+            className={`min-h-[16px] rounded-xl transition-all duration-100 ${
+              dndState.dragOverColForTask === column.id && !dndState.dragOverTaskId && dndState.draggingTaskId
+                ? 'border-2 border-dashed border-blue-300 bg-blue-50/50 min-h-10'
+                : ''
+            }`}
+            onDragOver={(e) => {
+              if (dndState.draggingTaskId) { e.preventDefault(); e.stopPropagation(); onTaskDragOverColEnd(column.id) }
+            }}
+            onDrop={(e) => {
+              if (dndState.draggingTaskId) { e.preventDefault(); e.stopPropagation(); onTaskDrop(column.id, null) }
+            }}
+          />
+        </div>
 
-        {/* Add task form */}
-        {addingTask ? (
-          <div className="space-y-1.5">
-            <textarea
-              autoFocus
-              value={newTaskText}
-              onChange={(e) => setNewTaskText(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault()
-                  addTask()
-                }
-                if (e.key === 'Escape') {
-                  setNewTaskText('')
-                  setAddingTask(false)
-                }
-              }}
-              placeholder="Task text..."
-              rows={2}
-              className="w-full text-sm p-2 border border-gray-300 rounded resize-none outline-none focus:border-black transition-colors duration-100 bg-white"
-            />
-            <div className="flex gap-2">
-              <button
-                onClick={addTask}
-                className="text-xs border border-black px-2 py-0.5 rounded hover:bg-black hover:text-white transition-colors duration-150"
-              >
-                Add
-              </button>
-              <button
-                onClick={() => {
-                  setNewTaskText('')
-                  setAddingTask(false)
+        {/* Add task */}
+        <div className="px-3 pb-3">
+          {addingTask ? (
+            <div className="space-y-2">
+              <textarea
+                autoFocus
+                value={newTaskText}
+                onChange={(e) => setNewTaskText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); addTask() }
+                  if (e.key === 'Escape') { setNewTaskText(''); setAddingTask(false) }
                 }}
-                className="text-xs text-gray-400 hover:text-black transition-colors duration-100"
-              >
-                Cancel
-              </button>
+                placeholder="What needs to be done?"
+                rows={2}
+                className="w-full text-sm p-3 border border-gray-200 rounded-xl resize-none outline-none focus:border-black focus:ring-1 focus:ring-black/5 transition-all duration-150 bg-white"
+                onClick={(e) => e.stopPropagation()}
+              />
+              <div className="flex gap-2 justify-end">
+                <button
+                  onClick={(e) => { e.stopPropagation(); setNewTaskText(''); setAddingTask(false) }}
+                  className="text-xs text-gray-400 hover:text-black px-3 py-1.5 rounded-lg transition-colors duration-150"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); addTask() }}
+                  className="text-xs font-medium bg-black text-white px-4 py-1.5 rounded-lg hover:bg-gray-800 transition-colors duration-150"
+                >
+                  Add
+                </button>
+              </div>
             </div>
-          </div>
-        ) : (
-          <button
-            onClick={() => setAddingTask(true)}
-            className="w-full text-left text-xs text-gray-400 hover:text-gray-600 py-1 transition-colors duration-100"
-          >
-            + Add task
-          </button>
-        )}
+          ) : (
+            <button
+              onClick={(e) => { e.stopPropagation(); setAddingTask(true) }}
+              className="w-full flex items-center justify-center gap-1.5 text-sm text-gray-400 hover:text-gray-700 py-2.5 border-2 border-dashed border-gray-200 hover:border-gray-300 rounded-xl transition-all duration-150 hover:bg-white/60"
+            >
+              <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
+                <path d="M7 2v10M2 7h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+              </svg>
+              Add task
+            </button>
+          )}
+        </div>
       </div>
-    </div>
+
+      {pendingDelete && (
+        <ConfirmModal
+          message={`Delete "${column.name}"?`}
+          subMessage={
+            tasks.length > 0
+              ? `This will also delete ${tasks.length} task${tasks.length > 1 ? 's' : ''} inside it.`
+              : undefined
+          }
+          confirmLabel="Delete"
+          danger
+          onConfirm={confirmDelete}
+          onCancel={() => setPendingDelete(false)}
+        />
+      )}
+    </>
   )
 }
