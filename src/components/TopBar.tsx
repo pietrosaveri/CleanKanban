@@ -7,10 +7,20 @@ import { createClient } from '@/lib/supabaseClient'
 import type { Board, User } from '@/types'
 import ConfirmModal from './ConfirmModal'
 
+const MEMBER_COLORS = [
+  'bg-blue-100 text-blue-700',
+  'bg-emerald-100 text-emerald-700',
+  'bg-violet-100 text-violet-700',
+  'bg-amber-100 text-amber-700',
+  'bg-rose-100 text-rose-700',
+  'bg-cyan-100 text-cyan-700',
+]
+
 interface TopBarProps {
   boards: Board[]
   currentBoard: Board | null
   user: User | null
+  boardMembers: { user_id: string; email: string }[]
   onBoardChange: (board: Board) => void
   onCreateBoard: () => void
   onJoinBoard: () => void
@@ -20,12 +30,15 @@ export default function TopBar({
   boards,
   currentBoard,
   user,
+  boardMembers,
   onBoardChange,
   onCreateBoard,
   onJoinBoard,
 }: TopBarProps) {
   const router = useRouter()
   const [menuOpen, setMenuOpen] = useState(false)
+  const [membersExpanded, setMembersExpanded] = useState(false)
+  const [hoveredMember, setHoveredMember] = useState<string | null>(null)
   const menuRef = useRef<HTMLDivElement>(null)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const userMenuRef = useRef<HTMLDivElement>(null)
@@ -225,6 +238,49 @@ export default function TopBar({
 
       {/* Right side */}
       <div className="flex items-center gap-2">
+        {/* Board member avatars */}
+        {currentBoard && boardMembers.length > 0 && (
+          <div
+            className="flex items-center"
+            onMouseEnter={() => setMembersExpanded(true)}
+            onMouseLeave={() => setMembersExpanded(false)}
+          >
+            {boardMembers.map((member, i) => {
+              const local = member.email.split('@')[0]
+              const parts = local.split(/[._+\-]/).filter(Boolean)
+              const initials =
+                parts.length >= 2
+                  ? (parts[0][0] + parts[1][0]).toUpperCase()
+                  : local.slice(0, 2).toUpperCase()
+              const colorClass = MEMBER_COLORS[member.user_id.charCodeAt(0) % MEMBER_COLORS.length]
+              return (
+                <div
+                  key={member.user_id}
+                  className={`relative w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold select-none border-2 border-white ${colorClass}`}
+                  style={{
+                    marginLeft: i === 0 ? 0 : membersExpanded ? 4 : -8,
+                    zIndex: boardMembers.length - i,
+                    transition: 'margin-left 200ms ease',
+                  }}
+                  onMouseEnter={() => setHoveredMember(member.user_id)}
+                  onMouseLeave={() => setHoveredMember(null)}
+                >
+                  {initials}
+                  {hoveredMember === member.user_id && (
+                    <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-gray-900 text-white text-xs rounded-lg px-2 py-1 whitespace-nowrap pointer-events-none z-50">
+                      <span
+                        className="absolute bottom-full left-1/2 -translate-x-1/2 border-4 border-transparent"
+                        style={{ borderBottomColor: '#111827' }}
+                      />
+                      {member.email}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        )}
+
         {currentBoard && (
           <Link
             href="/done"

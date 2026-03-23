@@ -22,40 +22,16 @@ export default function JoinBoardModal({ userId, onClose, onJoined }: JoinBoardM
     setError('')
 
     const supabase = createClient()
-    // Find board by join code
-    const { data: board, error: findError } = await supabase
-      .from('boards')
-      .select('*')
-      .eq('join_code', trimmed)
-      .single()
+    const { data: board, error: joinError } = await supabase
+      .rpc('join_board_by_code', { p_join_code: trimmed })
 
-    if (findError || !board) {
+    if (joinError || !board) {
       setError('No board found with that code.')
       setLoading(false)
       return
     }
 
-    // Check if already a member
-    const { data: existing } = await supabase
-      .from('board_members')
-      .select('id')
-      .eq('board_id', board.id)
-      .eq('user_id', userId)
-      .single()
-
-    if (!existing) {
-      const { error: joinError } = await supabase
-        .from('board_members')
-        .insert({ board_id: board.id, user_id: userId })
-
-      if (joinError) {
-        setError('Failed to join board. Please try again.')
-        setLoading(false)
-        return
-      }
-    }
-
-    onJoined(board)
+    onJoined(board as Board)
     onClose()
   }
 

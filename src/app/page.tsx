@@ -17,6 +17,7 @@ export default function HomePage() {
   const [currentBoard, setCurrentBoard] = useState<Board | null>(null)
   const [columns, setColumns] = useState<Column[]>([])
   const [tasks, setTasks] = useState<Task[]>([])
+  const [boardMembers, setBoardMembers] = useState<{ user_id: string; email: string }[]>([])
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showJoinModal, setShowJoinModal] = useState(false)
   const [initializing, setInitializing] = useState(true)
@@ -63,7 +64,7 @@ export default function HomePage() {
     const supabase = createClient()
 
     const loadBoardData = async () => {
-      const [{ data: cols }, { data: tsks }] = await Promise.all([
+      const [{ data: cols }, { data: tsks }, { data: members }] = await Promise.all([
         supabase
           .from('columns')
           .select('*')
@@ -75,9 +76,11 @@ export default function HomePage() {
           .eq('board_id', currentBoard.id)
           .eq('done', false)
           .order('position'),
+        supabase.rpc('get_board_members_emails', { p_board_id: currentBoard.id }),
       ])
       setColumns(cols ?? [])
       setTasks(tsks ?? [])
+      setBoardMembers(members ?? [])
     }
 
     loadBoardData()
@@ -202,6 +205,7 @@ export default function HomePage() {
         boards={boards}
         currentBoard={currentBoard}
         user={user}
+        boardMembers={boardMembers}
         onBoardChange={setCurrentBoard}
         onCreateBoard={() => setShowCreateModal(true)}
         onJoinBoard={() => setShowJoinModal(true)}
