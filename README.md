@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="img/logo.png" alt="CleanKanban logo" width="300" />
+  <img src="img/logo.png" alt="CleanKanban logo" width="400" />
 </p>
 
 <p align="center">
