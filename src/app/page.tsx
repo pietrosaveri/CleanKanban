@@ -19,6 +19,7 @@ export default function HomePage() {
   const [tasks, setTasks] = useState<Task[]>([])
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showJoinModal, setShowJoinModal] = useState(false)
+  const [initializing, setInitializing] = useState(true)
 
   const channelRef = useRef<RealtimeChannel | null>(null)
 
@@ -52,7 +53,7 @@ export default function HomePage() {
       }
     }
 
-    init()
+    init().finally(() => setInitializing(false))
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── load board data + subscribe to realtime ────────────────────
@@ -192,6 +193,11 @@ export default function HomePage() {
   // ── render ─────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-white">
+      {initializing && (
+        <div className="loading-overlay">
+          <span className="loader" />
+        </div>
+      )}
       <TopBar
         boards={boards}
         currentBoard={currentBoard}
