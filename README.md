@@ -36,13 +36,13 @@ Just you, your team, and the work.
 - **Auth** — sign in with Google, stay signed in
 
 <p align="center">
-  <img src="img/app1.png" alt="CleanKanban board view" width="780" />
+  <img src="img/app2.png" alt="CleanKanban board view" width="780" />
 </p>
 
 ### Nice DID history
 
 <p align="center">
-  <img src="img/History1.png" alt="CleanKanban done history" width="780" />
+  <img src="img/History2.png" alt="CleanKanban done history" width="780" />
 </p>
 
 ---
