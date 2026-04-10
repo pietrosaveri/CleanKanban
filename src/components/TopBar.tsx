@@ -47,6 +47,7 @@ export default function TopBar({
   const [joinCodeOpen, setJoinCodeOpen] = useState(false)
   const joinCodeRef = useRef<HTMLDivElement>(null)
   const [copied, setCopied] = useState(false)
+  const [onlineUserIds, setOnlineUserIds] = useState<Set<string>>(new Set())
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -78,6 +79,31 @@ export default function TopBar({
     if (joinCodeOpen) document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
   }, [joinCodeOpen])
+
+  // Track presence — show a green ring on online members
+  useEffect(() => {
+    if (!currentBoard || !user) return
+    const supabase = createClient()
+    const channel = supabase.channel(`presence:board:${currentBoard.id}`, {
+      config: { presence: { key: user.id } },
+    })
+
+    channel
+      .on('presence', { event: 'sync' }, () => {
+        const state = channel.presenceState<{ user_id: string }>()
+        const ids = new Set(Object.keys(state))
+        setOnlineUserIds(ids)
+      })
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await channel.track({ user_id: user.id })
+        }
+      })
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [currentBoard?.id, user?.id])
 
   const handleCopyJoinCode = () => {
     if (!currentBoard) return
@@ -256,7 +282,7 @@ export default function TopBar({
               return (
                 <div
                   key={member.user_id}
-                  className={`relative w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold select-none border-2 border-white ${colorClass}`}
+                  className={`relative w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold select-none border-2 ${onlineUserIds.has(member.user_id) ? 'border-green-400' : 'border-white'} ${colorClass}`}
                   style={{
                     marginLeft: i === 0 ? 0 : membersExpanded ? 4 : -8,
                     zIndex: boardMembers.length - i,
