@@ -185,7 +185,7 @@ export default function BoardView({ board, columns, tasks, onColumnDeleted, onTa
 
   return (
     <div
-      className="flex items-start gap-3 p-5 overflow-x-auto min-h-[calc(100vh-48px)] bg-gray-50"
+      className="flex items-start gap-3 p-5 overflow-x-auto min-h-[calc(100vh-48px)] bg-black"
       onDragOver={(e) => { if (draggingColId) e.preventDefault() }}
       onDrop={(e) => { if (draggingColId) { e.preventDefault(); handleColDrop() } }}
     >
@@ -212,7 +212,7 @@ export default function BoardView({ board, columns, tasks, onColumnDeleted, onTa
 
       <button
         onClick={addColumn}
-        className="flex-shrink-0 w-72 h-12 border-2 border-dashed border-gray-300 rounded-2xl text-sm text-gray-400 hover:border-gray-500 hover:text-gray-700 hover:bg-white transition-all duration-200"
+        className="flex-shrink-0 w-72 h-12 border-2 border-dashed border-white/10 rounded-2xl text-[13px] text-white/30 hover:border-white/20 hover:text-white/60 transition-all duration-200"
       >
         + Add column
       </button>

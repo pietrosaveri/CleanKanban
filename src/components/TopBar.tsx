@@ -8,12 +8,12 @@ import type { Board, User } from '@/types'
 import ConfirmModal from './ConfirmModal'
 
 const MEMBER_COLORS = [
-  'bg-blue-100 text-blue-700',
-  'bg-emerald-100 text-emerald-700',
-  'bg-violet-100 text-violet-700',
-  'bg-amber-100 text-amber-700',
-  'bg-rose-100 text-rose-700',
-  'bg-cyan-100 text-cyan-700',
+  'bg-blue-500/25 text-blue-300',
+  'bg-emerald-500/25 text-emerald-300',
+  'bg-violet-500/25 text-violet-300',
+  'bg-amber-500/25 text-amber-300',
+  'bg-rose-500/25 text-rose-300',
+  'bg-cyan-500/25 text-cyan-300',
 ]
 
 interface TopBarProps {
@@ -170,16 +170,19 @@ export default function TopBar({
     .join('')
 
   return (
-    <header className="border-b border-gray-200 px-4 h-12 flex items-center gap-3">
+    <header
+      className="sticky top-0 z-40 px-4 h-12 flex items-center gap-3 border-b border-white/[0.08]"
+      style={{ background: 'rgba(0,0,0,0.8)', backdropFilter: 'saturate(180%) blur(20px)', WebkitBackdropFilter: 'saturate(180%) blur(20px)' }}
+    >
       {/* Board selector */}
       <div className="flex items-center gap-0 flex-1 min-w-0" ref={menuRef}>
         <div className="relative">
           <button
             onClick={() => setMenuOpen((v) => !v)}
-            className={`flex items-center gap-2 text-sm px-3 py-1.5 rounded border transition-colors duration-150 ${
+            className={`flex items-center gap-2 text-[13px] tracking-[-0.08px] px-3 py-1.5 rounded-lg border transition-colors duration-150 ${
               menuOpen
-                ? 'border-black bg-black text-white'
-                : 'border-gray-200 hover:border-gray-400 text-gray-800'
+                ? 'border-white/20 bg-white/10 text-white'
+                : 'border-white/10 hover:border-white/20 text-white/80 hover:text-white'
             }`}
           >
             <span className="max-w-[180px] truncate font-medium">
@@ -203,11 +206,11 @@ export default function TopBar({
           </button>
 
           {menuOpen && (
-            <div className="absolute left-0 top-full mt-1 z-50 bg-white border border-gray-200 rounded shadow-md min-w-[220px] overflow-hidden">
+            <div className="absolute left-0 top-full mt-1 z-50 border border-white/10 rounded-xl min-w-[220px] overflow-hidden" style={{ background: '#1c1c1e', boxShadow: 'rgba(0,0,0,0.5) 0px 8px 30px 0px' }}>
               {boards.length > 0 && (
                 <>
                   <div className="px-3 pt-2 pb-1">
-                    <span className="text-xs text-gray-400 font-medium uppercase tracking-wide">
+                    <span className="text-xs text-white/40 font-medium uppercase tracking-wide">
                       Your boards
                     </span>
                   </div>
@@ -218,14 +221,14 @@ export default function TopBar({
                         onBoardChange(b)
                         setMenuOpen(false)
                       }}
-                      className={`flex items-center w-full text-left px-3 py-2 text-sm transition-colors duration-100 ${
+                      className={`flex items-center w-full text-left px-3 py-2 text-[13px] transition-colors duration-100 ${
                         b.id === currentBoard?.id
-                          ? 'bg-gray-50 font-medium text-black'
-                          : 'text-gray-700 hover:bg-gray-50'
+                          ? 'bg-white/10 font-medium text-white'
+                          : 'text-white/70 hover:bg-white/[0.06]'
                       }`}
                     >
                       {b.id === currentBoard?.id && (
-                        <span className="w-1.5 h-1.5 rounded-full bg-black mr-2.5 shrink-0" />
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#0071e3] mr-2.5 shrink-0" />
                       )}
                       {b.id !== currentBoard?.id && (
                         <span className="w-1.5 h-1.5 mr-2.5 shrink-0" />
@@ -233,7 +236,7 @@ export default function TopBar({
                       <span className="truncate">{b.name}</span>
                     </button>
                   ))}
-                  <div className="border-t border-gray-100 my-1" />
+                  <div className="border-t border-white/10 my-1" />
                 </>
               )}
 
@@ -242,9 +245,9 @@ export default function TopBar({
                   onCreateBoard()
                   setMenuOpen(false)
                 }}
-                className="flex items-center w-full text-left px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 transition-colors duration-100 gap-2"
+                className="flex items-center w-full text-left px-3 py-2 text-[13px] text-white/60 hover:bg-white/[0.06] hover:text-white transition-colors duration-100 gap-2"
               >
-                <span className="text-gray-400">+</span>
+                <span className="text-[#0071e3]">+</span>
                 New board
               </button>
               <button
@@ -252,9 +255,9 @@ export default function TopBar({
                   onJoinBoard()
                   setMenuOpen(false)
                 }}
-                className="flex items-center w-full text-left px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 transition-colors duration-100 gap-2 mb-1"
+                className="flex items-center w-full text-left px-3 py-2 text-[13px] text-white/60 hover:bg-white/[0.06] hover:text-white transition-colors duration-100 gap-2 mb-1"
               >
-                <span className="text-gray-400">→</span>
+                <span className="text-[#0071e3]">→</span>
                 Join board
               </button>
             </div>
@@ -282,7 +285,7 @@ export default function TopBar({
               return (
                 <div
                   key={member.user_id}
-                  className={`relative w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold select-none border-2 ${onlineUserIds.has(member.user_id) ? 'border-green-400' : 'border-white'} ${colorClass}`}
+                  className={`relative w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold select-none border-2 ${onlineUserIds.has(member.user_id) ? 'border-emerald-400' : 'border-[#1c1c1e]'} ${colorClass}`}
                   style={{
                     marginLeft: i === 0 ? 0 : membersExpanded ? 4 : -8,
                     zIndex: boardMembers.length - i,
@@ -310,7 +313,7 @@ export default function TopBar({
         {currentBoard && (
           <Link
             href="/done"
-            className="text-sm text-gray-500 hover:text-black transition-colors duration-150 whitespace-nowrap border border-gray-200 hover:border-gray-400 rounded-lg px-3 py-1 font-medium"
+            className="text-[13px] text-white/50 hover:text-white/90 transition-colors duration-150 whitespace-nowrap border border-white/10 hover:border-white/20 rounded-lg px-3 py-1"
           >
             Done history
           </Link>
@@ -321,28 +324,28 @@ export default function TopBar({
           <div className="relative" ref={joinCodeRef}>
             <button
               onClick={() => setJoinCodeOpen((v) => !v)}
-              className={`text-sm transition-colors duration-150 whitespace-nowrap border rounded-lg px-3 py-1 font-medium ${
+              className={`text-[13px] transition-colors duration-150 whitespace-nowrap border rounded-lg px-3 py-1 ${
                 joinCodeOpen
-                  ? 'border-black bg-black text-white'
-                  : 'border-gray-200 hover:border-gray-400 text-gray-500 hover:text-black'
+                  ? 'border-white/20 bg-white/10 text-white'
+                  : 'border-white/10 hover:border-white/20 text-white/50 hover:text-white/90'
               }`}
               title="Show join code"
             >
               Join code
             </button>
             {joinCodeOpen && (
-              <div className="absolute right-0 top-full mt-2 z-50 bg-white border border-gray-200 rounded-xl shadow-lg w-56 p-3">
-                <p className="text-xs text-gray-400 mb-1.5 font-medium uppercase tracking-wide">Board join code</p>
+              <div className="absolute right-0 top-full mt-2 z-50 border border-white/10 rounded-xl w-56 p-3" style={{ background: '#1c1c1e', boxShadow: 'rgba(0,0,0,0.5) 0px 8px 30px 0px' }}>
+                <p className="text-xs text-white/40 mb-1.5 font-medium uppercase tracking-wide">Board join code</p>
                 <div className="flex items-center gap-2">
-                  <span className="flex-1 font-mono text-sm bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1.5 select-all text-gray-800 tracking-widest">
+                  <span className="flex-1 font-mono text-sm bg-white/[0.06] border border-white/10 rounded-lg px-2.5 py-1.5 select-all text-white tracking-widest">
                     {currentBoard.join_code}
                   </span>
                   <button
                     onClick={handleCopyJoinCode}
                     className={`px-2.5 py-1.5 text-xs rounded-lg border transition-colors duration-150 font-medium shrink-0 ${
                       copied
-                        ? 'bg-green-50 border-green-300 text-green-600'
-                        : 'border-gray-200 hover:border-gray-400 text-gray-600 hover:text-black'
+                        ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400'
+                        : 'border-white/10 hover:border-white/20 text-white/60 hover:text-white'
                     }`}
                   >
                     {copied ? 'Copied!' : 'Copy'}
@@ -357,10 +360,10 @@ export default function TopBar({
         <div className="relative" ref={userMenuRef}>
           <button
             onClick={() => setUserMenuOpen((v) => !v)}
-            className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold select-none transition-all duration-150 ${
+            className={`w-8 h-8 rounded-full flex items-center justify-center text-[13px] font-semibold select-none transition-all duration-150 ${
               userMenuOpen
-                ? 'bg-black text-white'
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                ? 'bg-white/20 text-white'
+                : 'bg-white/10 text-white/80 hover:bg-white/15'
             }`}
             title={displayName}
           >
@@ -368,20 +371,20 @@ export default function TopBar({
           </button>
 
           {userMenuOpen && (
-            <div className="absolute right-0 top-full mt-2 z-50 bg-white border border-gray-200 rounded-xl shadow-lg w-56 overflow-hidden py-1">
+            <div className="absolute right-0 top-full mt-2 z-50 border border-white/10 rounded-xl w-56 overflow-hidden py-1" style={{ background: '#1c1c1e', boxShadow: 'rgba(0,0,0,0.5) 0px 8px 30px 0px' }}>
               {/* Email */}
-              <div className="px-4 py-2.5 border-b border-gray-100">
-                <p className="text-xs text-gray-400 truncate">{user?.email}</p>
+              <div className="px-4 py-2.5 border-b border-white/10">
+                <p className="text-xs text-white/40 truncate">{user?.email}</p>
               </div>
               <button
                 onClick={() => { setUserMenuOpen(false); handleLogout() }}
-                className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-150"
+                className="w-full text-left px-4 py-2.5 text-[13px] text-white/70 hover:bg-white/[0.06] hover:text-white transition-colors duration-150"
               >
                 Log out
               </button>
               <button
                 onClick={checkDeleteAccount}
-                className="w-full text-left px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 transition-colors duration-150"
+                className="w-full text-left px-4 py-2.5 text-[13px] text-red-400 hover:bg-red-500/10 transition-colors duration-150"
               >
                 Delete account
               </button>

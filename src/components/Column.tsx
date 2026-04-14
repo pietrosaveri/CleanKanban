@@ -98,10 +98,10 @@ export default function ColumnComponent({
     <>
       <div
         ref={colRef}
-        className={`flex-shrink-0 w-72 flex flex-col rounded-2xl transition-all duration-200 select-none border border-gray-200 ${
+        className={`flex-shrink-0 w-72 flex flex-col rounded-2xl transition-all duration-200 select-none ${
           isDraggingThisCol
-            ? 'opacity-40 bg-white ring-2 ring-black ring-offset-2 shadow-none'
-            : 'bg-white shadow-sm hover:shadow-md'
+            ? 'opacity-40 bg-[#1c1c1e] ring-2 ring-[#0071e3] ring-offset-2 ring-offset-black shadow-none'
+            : 'bg-[#1c1c1e]'
         }`}
         onDragOver={(e) => {
           if (dndState.draggingColId && dndState.draggingColId !== column.id) {
@@ -136,7 +136,7 @@ export default function ColumnComponent({
             onColDragStart(column.id)
           }}
           onDragEnd={onDragEnd}
-          className="mx-3 mt-2.5 h-1.5 rounded-full bg-gray-200 hover:bg-gray-300 cursor-grab active:cursor-grabbing transition-colors duration-150"
+          className="mx-3 mt-2.5 h-1.5 rounded-full bg-white/10 hover:bg-white/20 cursor-grab active:cursor-grabbing transition-colors duration-150"
         />
 
         {/* Header */}
@@ -151,24 +151,24 @@ export default function ColumnComponent({
                 if (e.key === 'Enter') renameColumn()
                 if (e.key === 'Escape') { setColumnName(column.name); setEditingName(false) }
               }}
-              className="flex-1 text-sm font-semibold bg-transparent outline-none border-b border-black min-w-0 py-0.5"
+              className="flex-1 text-[13px] font-semibold bg-transparent outline-none border-b border-white/40 text-white min-w-0 py-0.5"
               onClick={(e) => e.stopPropagation()}
             />
           ) : (
             <span
-              className="flex-1 text-sm font-semibold cursor-text truncate tracking-tight"
+              className="flex-1 text-[13px] font-semibold cursor-text truncate tracking-tight text-white"
               onClick={(e) => { e.stopPropagation(); setEditingName(true) }}
               title="Click to rename"
             >
               {column.name}
             </span>
           )}
-          <span className="text-[11px] text-gray-400 tabular-nums shrink-0 bg-gray-200/60 rounded-full px-1.5 py-0.5 font-medium">
+          <span className="text-[11px] text-white/40 tabular-nums shrink-0 bg-white/[0.08] rounded-full px-1.5 py-0.5 font-medium">
             {tasks.length}
           </span>
           <button
             onClick={(e) => { e.stopPropagation(); setPendingDelete(true) }}
-            className="w-7 h-7 flex items-center justify-center rounded-full text-gray-400 hover:bg-red-50 hover:text-red-500 transition-all duration-150 shrink-0"
+            className="w-7 h-7 flex items-center justify-center rounded-full text-white/30 hover:bg-red-500/10 hover:text-red-400 transition-all duration-150 shrink-0"
             title="Delete column"
           >
             <svg width="13" height="13" viewBox="0 0 12 12" fill="none">
@@ -178,7 +178,7 @@ export default function ColumnComponent({
         </div>
 
         {/* Divider */}
-        <div className="mx-4 h-px bg-gray-200/80" />
+        <div className="mx-4 h-px bg-white/[0.08]" />
 
         {/* Tasks */}
         <div className="flex-1 px-3 pt-3 pb-2 overflow-y-auto max-h-[calc(100vh-160px)] space-y-2">
@@ -187,7 +187,7 @@ export default function ColumnComponent({
               <div
                 className={`transition-all duration-100 mx-1 rounded-full ${
                   dndState.dragOverTaskId === task.id && dndState.draggingTaskId
-                    ? 'h-0.5 bg-black my-1'
+                    ? 'h-0.5 bg-[#0071e3] my-1'
                     : 'h-0'
                 }`}
                 onDragOver={(e) => {
@@ -214,7 +214,7 @@ export default function ColumnComponent({
           <div
             className={`min-h-[16px] rounded-xl transition-all duration-100 ${
               dndState.dragOverColForTask === column.id && !dndState.dragOverTaskId && dndState.draggingTaskId
-                ? 'border-2 border-dashed border-gray-300 bg-gray-50 min-h-10'
+                ? 'border-2 border-dashed border-[#0071e3]/40 bg-[#0071e3]/5 min-h-10'
                 : ''
             }`}
             onDragOver={(e) => {
@@ -240,19 +240,19 @@ export default function ColumnComponent({
                 }}
                 placeholder="What needs to be done?"
                 rows={2}
-                className="w-full text-sm p-3 border border-gray-200 rounded-xl resize-none outline-none focus:border-black focus:ring-1 focus:ring-black/5 transition-all duration-150 bg-white"
+                className="w-full text-[13px] text-white p-3 border border-white/10 rounded-xl resize-none outline-none focus:border-[#0071e3]/50 focus:ring-1 focus:ring-[#0071e3]/10 transition-all duration-150 bg-white/[0.06] placeholder:text-white/25"
                 onClick={(e) => e.stopPropagation()}
               />
               <div className="flex gap-2 justify-end">
                 <button
                   onClick={(e) => { e.stopPropagation(); setNewTaskText(''); setAddingTask(false) }}
-                  className="text-xs text-gray-400 hover:text-black px-3 py-1.5 rounded-lg transition-colors duration-150"
+                  className="text-xs text-white/40 hover:text-white/70 px-3 py-1.5 rounded-lg transition-colors duration-150"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={(e) => { e.stopPropagation(); addTask() }}
-                  className="text-xs font-medium bg-black text-white px-4 py-1.5 rounded-lg hover:bg-gray-800 transition-colors duration-150"
+                  className="text-xs font-medium bg-[#0071e3] text-white px-4 py-1.5 rounded-lg hover:bg-[#0077ed] transition-colors duration-150"
                 >
                   Add
                 </button>
@@ -261,7 +261,7 @@ export default function ColumnComponent({
           ) : (
             <button
               onClick={(e) => { e.stopPropagation(); setAddingTask(true) }}
-              className="w-full flex items-center justify-center gap-1.5 text-sm text-gray-400 hover:text-gray-700 py-2.5 border-2 border-dashed border-gray-200 hover:border-gray-300 rounded-xl transition-all duration-150 hover:bg-white/60"
+              className="w-full flex items-center justify-center gap-1.5 text-[13px] text-white/30 hover:text-white/60 py-2.5 border-2 border-dashed border-white/10 hover:border-white/20 rounded-xl transition-all duration-150 hover:bg-white/[0.03]"
             >
               <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
                 <path d="M7 2v10M2 7h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />

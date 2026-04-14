@@ -99,27 +99,30 @@ export default function DonePage() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-black">
       {/* Top bar */}
-      <header className="border-b border-gray-200 px-4 h-12 flex items-center gap-3">
+      <header
+        className="sticky top-0 z-40 px-4 h-12 flex items-center gap-3 border-b border-white/[0.08]"
+        style={{ background: 'rgba(0,0,0,0.8)', backdropFilter: 'saturate(180%) blur(20px)', WebkitBackdropFilter: 'saturate(180%) blur(20px)' }}
+      >
         <Link
           href="/"
-          className="text-sm text-gray-400 hover:text-black transition-colors duration-100"
+          className="text-[13px] text-white/50 hover:text-white transition-colors duration-100"
         >
           ← Back to board
         </Link>
 
-        <span className="text-gray-200">|</span>
+        <span className="text-white/20">|</span>
 
-        <h1 className="text-sm font-medium">Done history</h1>
+        <h1 className="text-[13px] font-semibold text-white">Done history</h1>
 
         {boards.length > 1 && (
           <>
-            <span className="text-gray-200">|</span>
+            <span className="text-white/20">|</span>
             <select
               value={selectedBoardId}
               onChange={(e) => setSelectedBoardId(e.target.value)}
-              className="text-sm border border-gray-200 rounded-lg px-2 py-1 bg-white"
+              className="text-[13px] border border-white/10 rounded-lg px-2 py-1 bg-white/[0.06] text-white"
             >
               {boards.map((b) => (
                 <option key={b.id} value={b.id}>
@@ -136,7 +139,7 @@ export default function DonePage() {
           <button
             onClick={clearDoneHistory}
             disabled={clearing}
-            className="text-xs text-gray-400 hover:text-red-500 border border-gray-200 hover:border-red-300 rounded-lg px-3 py-1 transition-all duration-150 disabled:opacity-50"
+            className="text-xs text-white/40 hover:text-red-400 border border-white/10 hover:border-red-400/30 rounded-lg px-3 py-1 transition-all duration-150 disabled:opacity-50"
           >
             {clearing ? 'Clearing...' : 'Clear all'}
           </button>
@@ -146,28 +149,28 @@ export default function DonePage() {
       {/* Content */}
       <main className="max-w-2xl mx-auto px-4 py-8">
         {loading ? (
-          <p className="text-sm text-gray-400">Loading...</p>
+          <p className="text-[14px] text-white/40">Loading...</p>
         ) : doneTasks.length === 0 ? (
-          <p className="text-sm text-gray-400">No completed tasks yet.</p>
+          <p className="text-[14px] text-white/40">No completed tasks yet.</p>
         ) : (
           <table className="w-full text-sm border-collapse">
             <thead>
-              <tr className="border-b border-gray-200">
-                <th className="text-left font-medium py-2 pr-4">Task</th>
-                <th className="text-left font-medium py-2 pr-4 whitespace-nowrap">Column</th>
-                <th className="text-left font-medium py-2 whitespace-nowrap">Done at</th>
+              <tr className="border-b border-white/10">
+                <th className="text-left font-medium text-white/50 text-[11px] uppercase tracking-wide py-2 pr-4">Task</th>
+                <th className="text-left font-medium text-white/50 text-[11px] uppercase tracking-wide py-2 pr-4 whitespace-nowrap">Column</th>
+                <th className="text-left font-medium text-white/50 text-[11px] uppercase tracking-wide py-2 whitespace-nowrap">Done at</th>
               </tr>
             </thead>
             <tbody>
               {doneTasks.map((task) => (
-                <tr key={task.id} className="border-b border-gray-100">
-                  <td className="py-2 pr-4 text-gray-700 break-words max-w-[16rem]">
+                <tr key={task.id} className="border-b border-white/[0.06]">
+                  <td className="py-2.5 pr-4 text-white/80 text-[13px] break-words max-w-[16rem]">
                     {task.text}
                   </td>
-                  <td className="py-2 pr-4 text-gray-400 whitespace-nowrap">
+                  <td className="py-2.5 pr-4 text-white/40 text-[13px] whitespace-nowrap">
                     {task.done_from_column ?? '—'}
                   </td>
-                  <td className="py-2 text-gray-400 whitespace-nowrap text-xs">
+                  <td className="py-2.5 text-white/30 whitespace-nowrap text-[11px]">
                     {formatDate(task.done_at)}
                   </td>
                 </tr>

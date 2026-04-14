@@ -195,7 +195,7 @@ export default function HomePage() {
 
   // ── render ─────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-black">
       {initializing && (
         <div className="loading-overlay">
           <span className="loader" />
@@ -220,18 +220,18 @@ export default function HomePage() {
           onTaskDeleted={handleTaskDeleted}
         />
       ) : (
-        <div className="flex flex-col items-center justify-center h-[calc(100vh-48px)] gap-3">
-          <p className="text-sm text-gray-400">No boards yet.</p>
-          <div className="flex gap-2">
+        <div className="flex flex-col items-center justify-center h-[calc(100vh-48px)] gap-4">
+          <p className="text-[17px] text-white/40 tracking-[-0.374px]">No boards yet.</p>
+          <div className="flex gap-3">
             <button
               onClick={() => setShowCreateModal(true)}
-              className="text-sm border border-black rounded px-4 py-1.5 hover:bg-black hover:text-white transition-colors duration-150"
+              className="text-[15px] bg-[#0071e3] text-white rounded-lg px-5 py-2 hover:bg-[#0077ed] transition-colors duration-150"
             >
               Create a board
             </button>
             <button
               onClick={() => setShowJoinModal(true)}
-              className="text-sm border border-gray-200 rounded px-4 py-1.5 hover:border-black transition-colors duration-150"
+              className="text-[15px] border border-white/20 text-white/60 rounded-lg px-5 py-2 hover:border-white/40 hover:text-white transition-colors duration-150"
             >
               Join a board
             </button>

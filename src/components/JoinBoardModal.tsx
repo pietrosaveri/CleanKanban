@@ -37,14 +37,17 @@ export default function JoinBoardModal({ userId, onClose, onJoined }: JoinBoardM
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/20"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose()
       }}
     >
-      <div className="bg-white border border-gray-200 rounded p-6 w-80 shadow-sm">
-        <h2 className="text-sm font-medium mb-1">Join a board</h2>
-        <p className="text-xs text-gray-400 mb-4">Enter the 8-character board code</p>
+      <div
+        className="border border-white/10 rounded-2xl p-6 w-80"
+        style={{ background: '#1c1c1e', boxShadow: 'rgba(0,0,0,0.6) 0px 20px 60px 0px' }}
+      >
+        <h2 className="text-[15px] font-semibold text-white tracking-[-0.2px] mb-1">Join a board</h2>
+        <p className="text-xs text-white/40 mb-4">Enter the 8-character board code</p>
 
         <input
           autoFocus
@@ -57,22 +60,22 @@ export default function JoinBoardModal({ userId, onClose, onJoined }: JoinBoardM
           }}
           placeholder="XXXXXXXX"
           maxLength={8}
-          className="w-full text-sm border border-gray-200 rounded px-3 py-2 outline-none focus:border-black transition-colors duration-100 mb-3 font-mono tracking-widest uppercase"
+          className="w-full text-[14px] text-white border border-white/10 rounded-lg px-3 py-2.5 outline-none focus:border-[#0071e3]/50 transition-colors duration-100 mb-3 bg-white/[0.06] placeholder:text-white/30 font-mono tracking-widest uppercase"
         />
 
-        {error && <p className="text-xs text-red-600 mb-2">{error}</p>}
+        {error && <p className="text-xs text-red-400 mb-2">{error}</p>}
 
         <div className="flex gap-2">
           <button
             onClick={handleJoin}
             disabled={loading || code.trim().length < 6}
-            className="text-sm border border-black rounded px-4 py-1.5 hover:bg-black hover:text-white transition-colors duration-150 disabled:opacity-40"
+            className="text-[14px] bg-[#0071e3] text-white rounded-lg px-5 py-2 hover:bg-[#0077ed] transition-colors duration-150 disabled:opacity-40"
           >
             {loading ? 'Joining...' : 'Join'}
           </button>
           <button
             onClick={onClose}
-            className="text-sm text-gray-400 hover:text-black transition-colors duration-100"
+            className="text-[14px] text-white/40 hover:text-white/70 transition-colors duration-100"
           >
             Cancel
           </button>

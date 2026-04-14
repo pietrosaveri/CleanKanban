@@ -84,13 +84,17 @@ export default function TaskComponent({
   // ── render ────────────────────────────────────────────────────
   return (
     <div
-      className={`relative bg-white border rounded-xl p-2 group transition-all duration-300 ${
+      className={`relative rounded-xl p-2.5 group transition-all duration-300 ${
         isDragging
-          ? 'opacity-40 border-gray-300 shadow-none'
+          ? 'opacity-30 shadow-none'
           : leaving
           ? 'opacity-0 scale-95'
-          : 'border-gray-200 shadow-sm hover:shadow-md cursor-grab active:cursor-grabbing'
+          : 'cursor-grab active:cursor-grabbing'
       }`}
+      style={{
+        background: '#2c2c2e',
+        boxShadow: isDragging || leaving ? 'none' : 'rgba(0,0,0,0.35) 0px 1px 5px 0px',
+      }}
       draggable={!editing && !completing}
       onDragStart={(e) => {
         if (editing || completing) {
@@ -114,7 +118,7 @@ export default function TaskComponent({
     >
       {/* Insert-before indicator */}
       {isDragTarget && !isDragging && (
-        <div className="absolute -top-px left-0 right-0 h-0.5 bg-black rounded-full z-10" />
+          <div className="absolute -top-px left-0 right-0 h-0.5 bg-[#0071e3] rounded-full z-10" />
       )}
 
       <div className="flex items-start gap-2">
@@ -124,8 +128,8 @@ export default function TaskComponent({
           title="Mark as done"
           className={`mt-0.5 flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all duration-300 ${
             completing
-              ? 'border-black bg-black scale-110'
-              : 'border-gray-300 hover:border-gray-600 hover:scale-105 cursor-pointer'
+              ? 'border-[#0071e3] bg-[#0071e3] scale-110'
+              : 'border-white/25 hover:border-white/50 hover:scale-105 cursor-pointer'
           }`}
         >
           <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
@@ -163,12 +167,12 @@ export default function TaskComponent({
                 }
               }}
               rows={2}
-              className="w-full text-sm bg-transparent outline-none resize-none cursor-text select-text"
+              className="w-full text-[13px] text-white bg-transparent outline-none resize-none cursor-text select-text tracking-[-0.08px]"
               onClick={(e) => e.stopPropagation()}
             />
           ) : (
             <p
-              className="text-sm whitespace-pre-wrap break-words cursor-pointer"
+              className="text-[13px] text-white whitespace-pre-wrap break-words cursor-pointer tracking-[-0.08px]"
               onClick={() => !completing && setEditing(true)}
             >
               {task.text}
@@ -177,7 +181,7 @@ export default function TaskComponent({
 
           {/* Animated strikethrough */}
           <div
-            className="absolute top-1/2 -translate-y-1/2 left-0 h-px bg-gray-500 pointer-events-none"
+            className="absolute top-1/2 -translate-y-1/2 left-0 h-px bg-white/50 pointer-events-none"
             style={{
               width: striking ? '100%' : '0%',
               transition: striking ? 'width 0.35s ease-in-out' : 'none',
@@ -189,7 +193,7 @@ export default function TaskComponent({
         <button
           onClick={(e) => { e.stopPropagation(); deleteTask() }}
           title="Delete task"
-          className="mt-0.5 flex-shrink-0 opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-500 text-base leading-none transition-all duration-100 cursor-pointer"
+          className="mt-0.5 flex-shrink-0 opacity-0 group-hover:opacity-100 text-white/25 hover:text-red-400 text-base leading-none transition-all duration-100 cursor-pointer"
         >
           ×
         </button>

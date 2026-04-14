@@ -16,13 +16,13 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center">
+    <main className="min-h-screen flex items-center justify-center bg-black">
       <div className="text-center">
-        <h1 className="text-2xl font-medium tracking-tight mb-1">Clean Kanban</h1>
-        <p className="text-sm text-gray-400 mb-10">Minimal realtime collaborative board</p>
+        <h1 className="text-[56px] font-semibold tracking-[-0.28px] leading-[1.07] text-white mb-4">CleanKanban</h1>
+        <p className="text-[17px] text-white/50 tracking-[-0.374px] leading-[1.47] mb-12">Minimal realtime collaborative board</p>
         <button
           onClick={handleLogin}
-          className="border border-black px-6 py-2 text-sm rounded hover:bg-black hover:text-white transition-colors duration-150"
+          className="bg-[#0071e3] text-white text-[17px] tracking-[-0.374px] px-6 py-2 rounded-lg hover:bg-[#0077ed] transition-colors duration-150"
         >
           Continue with Google
         </button>

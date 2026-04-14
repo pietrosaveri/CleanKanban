@@ -30,23 +30,26 @@ export default function ConfirmModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/25 backdrop-blur-[2px]"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-[3px]"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onCancel()
       }}
     >
-      <div className="bg-white rounded-2xl shadow-2xl w-80 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+      <div
+        className="border border-white/10 rounded-2xl w-80 overflow-hidden animate-in fade-in zoom-in-95 duration-150"
+        style={{ background: '#1c1c1e', boxShadow: 'rgba(0,0,0,0.6) 0px 20px 60px 0px' }}
+      >
         <div className="px-6 pt-6 pb-5">
-          <p className="text-[15px] font-medium text-gray-900 leading-snug">{message}</p>
+          <p className="text-[15px] font-semibold text-white leading-snug tracking-[-0.2px]">{message}</p>
           {subMessage && (
-            <p className="mt-1.5 text-sm text-gray-400 leading-relaxed">{subMessage}</p>
+            <p className="mt-1.5 text-[13px] text-white/50 leading-relaxed">{subMessage}</p>
           )}
         </div>
-        <div className="border-t border-gray-100 flex divide-x divide-gray-100">
+        <div className="border-t border-white/10 flex divide-x divide-white/10">
           <button
             autoFocus
             onClick={onCancel}
-            className="flex-1 py-3.5 text-sm text-gray-500 hover:bg-gray-50 transition-colors duration-150 font-medium"
+            className="flex-1 py-3.5 text-sm text-white/50 hover:bg-white/[0.06] transition-colors duration-150 font-medium"
           >
             Cancel
           </button>
@@ -54,8 +57,8 @@ export default function ConfirmModal({
             onClick={onConfirm}
             className={`flex-1 py-3.5 text-sm font-semibold transition-colors duration-150 ${
               danger
-                ? 'text-red-500 hover:bg-red-50'
-                : 'text-black hover:bg-gray-50'
+                ? 'text-red-400 hover:bg-red-500/10'
+                : 'text-[#0071e3] hover:bg-[#0071e3]/10'
             }`}
           >
             {confirmLabel}
