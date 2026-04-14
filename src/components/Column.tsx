@@ -1,6 +1,7 @@
 'use client'
 
 import { Fragment, useEffect, useRef, useState } from 'react'
+import { motion } from 'framer-motion'
 import { createClient } from '@/lib/supabaseClient'
 import type { Board, Column, Task } from '@/types'
 import TaskComponent from './Task'
@@ -16,7 +17,7 @@ interface ColumnProps {
   onTaskDeleted: (id: string) => void
   dndState: DnDState
   onColDragStart: (colId: string) => void
-  onColDragOver: (insertIdx: number) => void
+  onColDragOver: (colId: string) => void
   onColDrop: () => void
   onTaskDragStart: (taskId: string) => void
   onTaskDragOverTask: (taskId: string) => void
@@ -96,22 +97,21 @@ export default function ColumnComponent({
   // ── render ────────────────────────────────────────────────────
   return (
     <>
-      <div
+      <motion.div
         ref={colRef}
-        className={`flex-shrink-0 w-72 flex flex-col rounded-2xl transition-all duration-200 select-none border border-gray-200 ${
+        layout
+        layoutId={column.id}
+        transition={isDraggingThisCol ? { duration: 0 } : { type: 'spring', stiffness: 400, damping: 35 }}
+        className={`flex-shrink-0 w-72 flex flex-col rounded-2xl select-none border ${
           isDraggingThisCol
-            ? 'opacity-40 bg-white ring-2 ring-black ring-offset-2 shadow-none'
-            : 'bg-white shadow-sm hover:shadow-md'
+            ? 'opacity-0 bg-white border-transparent'
+            : 'bg-white shadow-sm hover:shadow-md transition-colors duration-200 border-gray-200'
         }`}
         onDragOver={(e) => {
           if (dndState.draggingColId && dndState.draggingColId !== column.id) {
             e.preventDefault()
             e.stopPropagation()
-            const rect = colRef.current?.getBoundingClientRect()
-            if (rect) {
-              const isLeftHalf = e.clientX < rect.left + rect.width / 2
-              onColDragOver(isLeftHalf ? colIndex : colIndex + 1)
-            }
+            onColDragOver(column.id)
           } else if (dndState.draggingTaskId) {
             e.preventDefault()
             onTaskDragOverColEnd(column.id)
@@ -132,7 +132,14 @@ export default function ColumnComponent({
           onDragStart={(e) => {
             if (editingName || addingTask) { e.preventDefault(); return }
             e.dataTransfer.effectAllowed = 'move'
-            if (colRef.current) e.dataTransfer.setDragImage(colRef.current, 130, 20)
+            if (colRef.current) {
+              const rect = colRef.current.getBoundingClientRect()
+              e.dataTransfer.setDragImage(
+                colRef.current,
+                e.clientX - rect.left,
+                e.clientY - rect.top
+              )
+            }
             onColDragStart(column.id)
           }}
           onDragEnd={onDragEnd}
@@ -202,7 +209,7 @@ export default function ColumnComponent({
                 column={column}
                 onTaskDeleted={onTaskDeleted}
                 isDragging={dndState.draggingTaskId === task.id}
-                isDragTarget={dndState.dragOverTaskId === task.id}
+                isColumnDragging={!!dndState.draggingColId}
                 onDragStart={() => onTaskDragStart(task.id)}
                 onDragEnd={onDragEnd}
                 onDragOverAsTarget={() => { if (dndState.draggingTaskId) onTaskDragOverTask(task.id) }}
@@ -270,7 +277,7 @@ export default function ColumnComponent({
             </button>
           )}
         </div>
-      </div>
+      </motion.div>
 
       {pendingDelete && (
         <ConfirmModal

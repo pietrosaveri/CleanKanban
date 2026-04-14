@@ -7,7 +7,7 @@ import ColumnComponent from './Column'
 
 export interface DnDState {
   draggingColId: string | null
-  dragInsertIdx: number | null
+  dragOverColId: string | null
   draggingTaskId: string | null
   dragOverTaskId: string | null
   dragOverColForTask: string | null
@@ -25,19 +25,26 @@ export default function BoardView({ board, columns, tasks, onColumnDeleted, onTa
   const sortedColumns = [...columns].sort((a, b) => a.position - b.position)
 
   const [draggingColId, setDraggingColId] = useState<string | null>(null)
-  const [dragInsertIdx, setDragInsertIdx] = useState<number | null>(null)
+  const [dragOverColId, setDragOverColId] = useState<string | null>(null)
   const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null)
   const [dragOverTaskId, setDragOverTaskId] = useState<string | null>(null)
   const [dragOverColForTask, setDragOverColForTask] = useState<string | null>(null)
   // Holds the reordered columns immediately after a drop so the UI doesn't
   // flash back to the original order while waiting for the realtime update.
   const [optimisticColumns, setOptimisticColumns] = useState<Column[] | null>(null)
+  // Same for tasks.
+  const [optimisticTasks, setOptimisticTasks] = useState<Task[] | null>(null)
 
   // Once Supabase realtime delivers the confirmed positions, drop the
   // optimistic override so we render from the source of truth again.
+  // Guard: don't clear while a column drag is in progress or the UI will flash.
   useEffect(() => {
-    setOptimisticColumns(null)
-  }, [columns])
+    if (!draggingColId) setOptimisticColumns(null)
+  }, [columns, draggingColId])
+
+  useEffect(() => {
+    setOptimisticTasks(null)
+  }, [tasks])
 
   const addColumn = async () => {
     const supabase = createClient()
@@ -51,7 +58,7 @@ export default function BoardView({ board, columns, tasks, onColumnDeleted, onTa
 
   const clearDrag = () => {
     setDraggingColId(null)
-    setDragInsertIdx(null)
+    setDragOverColId(null)
     setDraggingTaskId(null)
     setDragOverTaskId(null)
     setDragOverColForTask(null)
@@ -62,30 +69,29 @@ export default function BoardView({ board, columns, tasks, onColumnDeleted, onTa
     setDraggingColId(colId)
   }
 
-  const handleColDragOver = (insertIdx: number) => {
-    setDragInsertIdx(insertIdx)
+  const handleColDragOver = (colId: string) => {
+    if (dragOverColId !== colId) setDragOverColId(colId)
   }
 
   const handleColDrop = async () => {
     const id = draggingColId
-    const insertIdx = dragInsertIdx
+    const overColId = dragOverColId
     clearDrag()
-    if (!id || insertIdx === null) return
+    if (!id || !overColId || id === overColId) return
     const sorted = [...columns].sort((a, b) => a.position - b.position)
     const draggingIdx = sorted.findIndex((c) => c.id === id)
     if (draggingIdx === -1) return
     const without = sorted.filter((c) => c.id !== id)
-    const adjustedIdx = Math.min(
-      insertIdx > draggingIdx ? insertIdx - 1 : insertIdx,
-      without.length
-    )
-    without.splice(adjustedIdx, 0, sorted[draggingIdx])
-    if (without.every((col, i) => col.id === sorted[i]?.id)) return
+    const targetIdx = without.findIndex((c) => c.id === overColId)
+    if (targetIdx === -1) return
+    const reordered = [...without]
+    reordered.splice(targetIdx, 0, sorted[draggingIdx])
+    if (reordered.every((col, i) => col.id === sorted[i]?.id)) return
     // Apply immediately so the UI stays in place while the DB round-trip happens
-    setOptimisticColumns([...without])
+    setOptimisticColumns([...reordered])
     const supabase = createClient()
     await Promise.all(
-      without.map((col, i) => supabase.from('columns').update({ position: i }).eq('id', col.id))
+      reordered.map((col, i) => supabase.from('columns').update({ position: i }).eq('id', col.id))
     )
   }
 
@@ -95,13 +101,13 @@ export default function BoardView({ board, columns, tasks, onColumnDeleted, onTa
   }
 
   const handleTaskDragOverTask = (taskId: string) => {
-    setDragOverTaskId(taskId)
-    setDragOverColForTask(null)
+    if (dragOverTaskId !== taskId) setDragOverTaskId(taskId)
+    if (dragOverColForTask !== null) setDragOverColForTask(null)
   }
 
   const handleTaskDragOverColEnd = (colId: string) => {
-    setDragOverTaskId(null)
-    setDragOverColForTask(colId)
+    if (dragOverTaskId !== null) setDragOverTaskId(null)
+    if (dragOverColForTask !== colId) setDragOverColForTask(colId)
   }
 
   const handleTaskDrop = async (targetColId: string, beforeTaskId: string | null) => {
@@ -127,6 +133,25 @@ export default function BoardView({ board, columns, tasks, onColumnDeleted, onTa
 
     const supabase = createClient()
     const updates: PromiseLike<unknown>[] = []
+
+    // Apply optimistic update immediately so the UI doesn't snap back
+    // while waiting for the DB round-trip + realtime confirmation.
+    const newTaskPositions = new Map<string, { position: number; column_id: string }>()
+    newTargetOrder.forEach((t, i) => {
+      newTaskPositions.set(t.id, { position: i, column_id: targetColId })
+    })
+    if (sourceColId !== targetColId) {
+      tasks
+        .filter((t) => t.column_id === sourceColId && t.id !== taskId)
+        .sort((a, b) => a.position - b.position)
+        .forEach((t, i) => {
+          newTaskPositions.set(t.id, { position: i, column_id: sourceColId })
+        })
+    }
+    setOptimisticTasks(tasks.map((t) => {
+      const update = newTaskPositions.get(t.id)
+      return update ? { ...t, ...update } : t
+    }))
 
     newTargetOrder.forEach((t, i) => {
       const isMovedTask = t.id === taskId
@@ -158,28 +183,28 @@ export default function BoardView({ board, columns, tasks, onColumnDeleted, onTa
 
   const dndState: DnDState = {
     draggingColId,
-    dragInsertIdx,
+    dragOverColId,
     draggingTaskId,
     dragOverTaskId,
     dragOverColForTask,
   }
 
   // Compute live preview order while dragging a column.
-  // Uses the same index-adjustment logic as handleColDrop so the preview
-  // always matches what will actually be saved on drop.
+  // As soon as the cursor enters any part of a column, it immediately slides
+  // out of the way — the dragged column takes the hovered column's exact slot.
   // Fall back to optimisticColumns (post-drop) then sortedColumns (confirmed).
+  const displayTasks = optimisticTasks ?? tasks
   let displayColumns = optimisticColumns ?? sortedColumns
-  if (draggingColId && dragInsertIdx !== null) {
+  if (draggingColId && dragOverColId && draggingColId !== dragOverColId) {
     const draggingIdx = sortedColumns.findIndex((c) => c.id === draggingColId)
     if (draggingIdx !== -1) {
       const without = sortedColumns.filter((c) => c.id !== draggingColId)
-      const adjustedIdx = Math.min(
-        dragInsertIdx > draggingIdx ? dragInsertIdx - 1 : dragInsertIdx,
-        without.length
-      )
-      const reordered = [...without]
-      reordered.splice(adjustedIdx, 0, sortedColumns[draggingIdx])
-      displayColumns = reordered
+      const targetIdx = without.findIndex((c) => c.id === dragOverColId)
+      if (targetIdx !== -1) {
+        const reordered = [...without]
+        reordered.splice(targetIdx, 0, sortedColumns[draggingIdx])
+        displayColumns = reordered
+      }
     }
   }
 
@@ -194,7 +219,7 @@ export default function BoardView({ board, columns, tasks, onColumnDeleted, onTa
           key={column.id}
           column={column}
           colIndex={index}
-          tasks={tasks.filter((t) => t.column_id === column.id)}
+          tasks={displayTasks.filter((t) => t.column_id === column.id)}
           board={board}
           onColumnDeleted={onColumnDeleted}
           onTaskDeleted={onTaskDeleted}

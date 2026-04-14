@@ -12,7 +12,7 @@ interface TaskProps {
   column: Column
   onTaskDeleted: (id: string) => void
   isDragging: boolean
-  isDragTarget: boolean
+  isColumnDragging: boolean
   onDragStart: () => void
   onDragEnd: () => void
   onDragOverAsTarget: () => void
@@ -24,7 +24,7 @@ export default function TaskComponent({
   column,
   onTaskDeleted,
   isDragging,
-  isDragTarget,
+  isColumnDragging,
   onDragStart,
   onDragEnd,
   onDragOverAsTarget,
@@ -103,20 +103,17 @@ export default function TaskComponent({
       onDragEnd={onDragEnd}
       onDragOver={(e) => {
         e.preventDefault()
+        if (isColumnDragging) return   // let column drag events bubble to Column
         e.stopPropagation()
         onDragOverAsTarget()
       }}
       onDrop={(e) => {
         e.preventDefault()
+        if (isColumnDragging) return
         e.stopPropagation()
         onDropOnTask()
       }}
     >
-      {/* Insert-before indicator */}
-      {isDragTarget && !isDragging && (
-        <div className="absolute -top-px left-0 right-0 h-0.5 bg-black rounded-full z-10" />
-      )}
-
       <div className="flex items-start gap-2">
         {/* ── Done circle ── */}
         <button
