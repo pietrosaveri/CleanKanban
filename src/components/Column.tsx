@@ -181,7 +181,7 @@ export default function ColumnComponent({
         <div className="mx-4 h-px bg-gray-200/80" />
 
         {/* Tasks */}
-        <div className="flex-1 px-3 pt-3 pb-2 overflow-y-auto max-h-[calc(100vh-160px)]">
+        <div className="flex-1 px-3 pt-3 pb-2 overflow-y-auto max-h-[calc(100vh-160px)] space-y-2">
           {sortedTasks.map((task) => (
             <Fragment key={task.id}>
               <div
